@@ -13,9 +13,17 @@ type env struct {
 }
 
 func NewEnv() *env {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatalln("Error loading .env file")
+	if os.Getenv("ENV") == "" {
+		log.Fatalln("You forget to set the ENV environment variable!")
+	}
+
+	if os.Getenv("ENV") != "docker" {
+		log.Println("Loading .env file...")
+
+		err := godotenv.Load()
+		if err != nil {
+			log.Fatalln("Error loading .env file")
+		}
 	}
 
 	return &env{

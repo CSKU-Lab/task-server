@@ -1,9 +1,19 @@
 services:
+  app:
+    container_name: task-grpc
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8082:8082"
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    restart: unless-stopped
   mongo:
     container_name: task-mongodb
     image: mongo:latest
-    ports:
-      - "27018:27017"
     volumes:
       - mongo_data:/data/db
     environment:
@@ -14,8 +24,6 @@ services:
   redis:
     container_name: task-redis
     image: redis:7.4.3
-    ports:
-      - "6379:6379"
     volumes:
       - redis-data:/data
     restart: unless-stopped

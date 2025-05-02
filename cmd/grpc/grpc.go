@@ -32,7 +32,7 @@ func main() {
 
 	db := client.Database("db")
 
-	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%s", env.GetPort()))
+	lis, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%s", env.GetPort()))
 	if err != nil {
 		log.Fatalln("failed to listen: ", err)
 	}
@@ -141,31 +141,37 @@ func (g *grpcServer) GetTask(ctx context.Context, req *pb.GetTaskRequest) (*pb.T
 			}
 			return testcases
 		}(),
+		Solution: task.Solution,
 	}, nil
 }
 
 func (g *grpcServer) UpdateTask(ctx context.Context, req *pb.UpdateTaskRequest) (*pb.Task, error) {
-	updatedFields := mongodb.GetUpdatedFields(req)
+	updatedFields := mongodb.GetUpdatedFields(&models.UpdateTask{
+		ID: &req.Id,
+		TestCases: func() *[]models.TestCase {
+			if len(req.GetTestcases()) == 0 {
+				return nil
+			}
 
-	_, err := g.db.Collection("tasks").UpdateByID(ctx, req.GetId(), updatedFields)
-	if err != nil {
-		return nil, err
-	}
-	return &pb.Task{
-		Id:       req.GetId(),
-		Solution: req.GetSolution(),
-		Testcases: func() []*pb.TestCase {
-			var testcases []*pb.TestCase
+			var testcases []models.TestCase
 			for _, testcase := range req.GetTestcases() {
-				testcases = append(testcases, &pb.TestCase{
-					Id:     testcase.GetId(),
+				testcases = append(testcases, models.TestCase{
+					ID:     testcase.GetId(),
 					Input:  testcase.GetInput(),
 					Output: testcase.GetOutput(),
 				})
 			}
-			return testcases
+			return &testcases
 		}(),
-	}, nil
+		Solution: req.Solution,
+	})
+
+	_, err := g.db.Collection("tasks").UpdateByID(ctx, req.GetId(), bson.D{{Key: "$set", Value: updatedFields}})
+	if err != nil {
+		return nil, err
+	}
+
+	return g.GetTask(ctx, &pb.GetTaskRequest{Id: req.GetId()})
 }
 
 func (g *grpcServer) DeleteTask(ctx context.Context, req *pb.DeleteTaskRequest) (*pb.DeleteTaskResponse, error) {

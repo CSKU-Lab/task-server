@@ -8,6 +8,8 @@ services:
       - "8082:8082"
     volumes:
       - .:/app
+    environment:
+      - ENV=docker
     env_file:
       - .env
     restart: unless-stopped

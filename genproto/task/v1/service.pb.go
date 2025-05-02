@@ -26,6 +26,7 @@ type Task struct {
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Solution      string                 `protobuf:"bytes,2,opt,name=solution,proto3" json:"solution,omitempty"`
 	Testcases     []*TestCase            `protobuf:"bytes,3,rep,name=testcases,proto3" json:"testcases,omitempty"`
+	CompareId     string                 `protobuf:"bytes,4,opt,name=compare_id,json=compareId,proto3" json:"compare_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -79,6 +80,13 @@ func (x *Task) GetTestcases() []*TestCase {
 		return x.Testcases
 	}
 	return nil
+}
+
+func (x *Task) GetCompareId() string {
+	if x != nil {
+		return x.CompareId
+	}
+	return ""
 }
 
 type TestCase struct {
@@ -277,6 +285,8 @@ type AddTaskRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Testcases     []*TestCase            `protobuf:"bytes,2,rep,name=testcases,proto3" json:"testcases,omitempty"`
+	Solution      string                 `protobuf:"bytes,3,opt,name=solution,proto3" json:"solution,omitempty"`
+	CompareId     string                 `protobuf:"bytes,4,opt,name=compare_id,json=compareId,proto3" json:"compare_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -325,11 +335,26 @@ func (x *AddTaskRequest) GetTestcases() []*TestCase {
 	return nil
 }
 
+func (x *AddTaskRequest) GetSolution() string {
+	if x != nil {
+		return x.Solution
+	}
+	return ""
+}
+
+func (x *AddTaskRequest) GetCompareId() string {
+	if x != nil {
+		return x.CompareId
+	}
+	return ""
+}
+
 type UpdateTaskRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Solution      *string                `protobuf:"bytes,2,opt,name=solution,proto3,oneof" json:"solution,omitempty"`
 	Testcases     []*TestCase            `protobuf:"bytes,3,rep,name=testcases,proto3" json:"testcases,omitempty"`
+	CompareId     *string                `protobuf:"bytes,4,opt,name=compare_id,json=compareId,proto3,oneof" json:"compare_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -383,6 +408,13 @@ func (x *UpdateTaskRequest) GetTestcases() []*TestCase {
 		return x.Testcases
 	}
 	return nil
+}
+
+func (x *UpdateTaskRequest) GetCompareId() string {
+	if x != nil && x.CompareId != nil {
+		return *x.CompareId
+	}
+	return ""
 }
 
 type DeleteTaskRequest struct {
@@ -469,11 +501,13 @@ var File_task_v1_service_proto protoreflect.FileDescriptor
 
 const file_task_v1_service_proto_rawDesc = "" +
 	"\n" +
-	"\x15task/v1/service.proto\x12\atask.v1\"c\n" +
+	"\x15task/v1/service.proto\x12\atask.v1\"\x82\x01\n" +
 	"\x04Task\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1a\n" +
 	"\bsolution\x18\x02 \x01(\tR\bsolution\x12/\n" +
-	"\ttestcases\x18\x03 \x03(\v2\x11.task.v1.TestCaseR\ttestcases\"H\n" +
+	"\ttestcases\x18\x03 \x03(\v2\x11.task.v1.TestCaseR\ttestcases\x12\x1d\n" +
+	"\n" +
+	"compare_id\x18\x04 \x01(\tR\tcompareId\"H\n" +
 	"\bTestCase\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05input\x18\x02 \x01(\tR\x05input\x12\x16\n" +
@@ -483,15 +517,21 @@ const file_task_v1_service_proto_rawDesc = "" +
 	"\x10GetTasksResponse\x12#\n" +
 	"\x05tasks\x18\x01 \x03(\v2\r.task.v1.TaskR\x05tasks\" \n" +
 	"\x0eGetTaskRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"Q\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"\x8c\x01\n" +
 	"\x0eAddTaskRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12/\n" +
-	"\ttestcases\x18\x02 \x03(\v2\x11.task.v1.TestCaseR\ttestcases\"\x82\x01\n" +
+	"\ttestcases\x18\x02 \x03(\v2\x11.task.v1.TestCaseR\ttestcases\x12\x1a\n" +
+	"\bsolution\x18\x03 \x01(\tR\bsolution\x12\x1d\n" +
+	"\n" +
+	"compare_id\x18\x04 \x01(\tR\tcompareId\"\xb5\x01\n" +
 	"\x11UpdateTaskRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1f\n" +
 	"\bsolution\x18\x02 \x01(\tH\x00R\bsolution\x88\x01\x01\x12/\n" +
-	"\ttestcases\x18\x03 \x03(\v2\x11.task.v1.TestCaseR\ttestcasesB\v\n" +
-	"\t_solution\"#\n" +
+	"\ttestcases\x18\x03 \x03(\v2\x11.task.v1.TestCaseR\ttestcases\x12\"\n" +
+	"\n" +
+	"compare_id\x18\x04 \x01(\tH\x01R\tcompareId\x88\x01\x01B\v\n" +
+	"\t_solutionB\r\n" +
+	"\v_compare_id\"#\n" +
 	"\x11DeleteTaskRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"\x14\n" +
 	"\x12DeleteTaskResponse2\xb4\x02\n" +

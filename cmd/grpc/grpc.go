@@ -79,6 +79,8 @@ func (g *grpcServer) AddTask(ctx context.Context, req *pb.AddTaskRequest) (*pb.T
 
 	task := &models.Task{
 		ID:        req.GetId(),
+		CompareID: req.GetCompareId(),
+		Solution:  req.GetSolution(),
 		TestCases: make([]models.TestCase, 0),
 	}
 
@@ -97,7 +99,9 @@ func (g *grpcServer) AddTask(ctx context.Context, req *pb.AddTaskRequest) (*pb.T
 
 	return &pb.Task{
 		Id:        req.GetId(),
+		Solution:  req.GetSolution(),
 		Testcases: req.GetTestcases(),
+		CompareId: req.GetCompareId(),
 	}, nil
 }
 
@@ -116,7 +120,9 @@ func (g *grpcServer) GetTasks(ctx context.Context, req *pb.GetTasksRequest) (*pb
 		}
 
 		tasks = append(tasks, &pb.Task{
-			Id: task.ID,
+			Id:        task.ID,
+			CompareId: task.CompareID,
+			Solution:  task.Solution,
 			Testcases: func() []*pb.TestCase {
 				var testcases []*pb.TestCase
 				for _, testcase := range task.TestCases {
@@ -147,7 +153,9 @@ func (g *grpcServer) GetTask(ctx context.Context, req *pb.GetTaskRequest) (*pb.T
 	}
 
 	return &pb.Task{
-		Id: task.ID,
+		Id:        task.ID,
+		CompareId: task.CompareID,
+		Solution:  task.Solution,
 		Testcases: func() []*pb.TestCase {
 			var testcases []*pb.TestCase
 			for _, testcase := range task.TestCases {
@@ -159,13 +167,14 @@ func (g *grpcServer) GetTask(ctx context.Context, req *pb.GetTaskRequest) (*pb.T
 			}
 			return testcases
 		}(),
-		Solution: task.Solution,
 	}, nil
 }
 
 func (g *grpcServer) UpdateTask(ctx context.Context, req *pb.UpdateTaskRequest) (*pb.Task, error) {
 	updatedFields := mongodb.GetUpdatedFields(&models.UpdateTask{
-		ID: &req.Id,
+		ID:        &req.Id,
+		CompareID: req.CompareId,
+		Solution: req.Solution,
 		TestCases: func() *[]models.TestCase {
 			if len(req.GetTestcases()) == 0 {
 				return nil
@@ -181,7 +190,6 @@ func (g *grpcServer) UpdateTask(ctx context.Context, req *pb.UpdateTaskRequest) 
 			}
 			return &testcases
 		}(),
-		Solution: req.Solution,
 	})
 
 	_, err := g.db.Collection("tasks").UpdateByID(ctx, req.GetId(), bson.D{{Key: "$set", Value: updatedFields}})

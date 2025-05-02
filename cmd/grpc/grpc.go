@@ -5,6 +5,10 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/CSKU-Lab/task-service/configs"
 	pb "github.com/CSKU-Lab/task-service/genproto/task/v1"
@@ -43,6 +47,20 @@ func main() {
 	})
 	reflection.Register(s)
 	log.Println("gRPC ConfigService registered")
+
+	go func() {
+		sigs := make(chan os.Signal, 1)
+		signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+
+		sig := <-sigs
+		log.Printf("Receive %s signal from OS, going to shutdown...\n", sig)
+		timer := time.AfterFunc(10*time.Second, func() {
+			log.Println("Server couldn't stop grafully in time. Doing force stop.")
+		})
+		defer timer.Stop()
+
+		s.GracefulStop()
+	}()
 
 	if err := s.Serve(lis); err != nil {
 		log.Fatalln("Cannot start grpc server :", err)

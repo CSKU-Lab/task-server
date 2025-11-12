@@ -12,7 +12,6 @@ import (
 
 	"github.com/CSKU-Lab/task-service/configs"
 	pb "github.com/CSKU-Lab/task-service/genproto/task/v1"
-	"github.com/CSKU-Lab/task-service/internal/generators"
 	"github.com/CSKU-Lab/task-service/models"
 	"github.com/CSKU-Lab/task-service/mongodb"
 	"github.com/google/uuid"
@@ -20,7 +19,9 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/reflection"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -79,24 +80,6 @@ func NewGRPCServer(db *mongo.Database) pb.TaskServiceServer {
 	return &grpcServer{
 		db: db,
 	}
-}
-
-func (g *grpcServer) CreateTask(ctx context.Context, empty *emptypb.Empty) (*pb.CreateTaskResponse, error) {
-	id, err := uuid.NewV7()
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate UUID: %v", err)
-	}
-
-	_, err = g.db.Collection("tasks").InsertOne(ctx, bson.M{
-		"_id": id.String(),
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to insert task: %v", err)
-	}
-
-	return &pb.CreateTaskResponse{
-		Id: id.String(),
-	}, nil
 }
 
 func (g *grpcServer) GetTasks(ctx context.Context, req *pb.GetTasksRequest) (*pb.GetTasksResponse, error) {
@@ -166,9 +149,19 @@ func (g *grpcServer) GetTask(ctx context.Context, req *pb.GetTaskRequest) (*pb.T
 	}, nil
 }
 
-func (g *grpcServer) UpdateTask(ctx context.Context, req *pb.UpdateTaskRequest) (*pb.TaskResponse, error) {
+func (g *grpcServer) SetTask(ctx context.Context, req *pb.SetTaskRequest) (*pb.SetTaskResponse, error) {
+	id := req.GetId()
+	if id == "" {
+		uuid, err := uuid.NewV7()
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to generate UUID: %v", err)
+		}
+		id = uuid.String()
+	}
+
+	var err error
+
 	updatedFields := mongodb.GetUpdatedFields(&models.UpdateTask{
-		ID:        &req.Id,
 		RunnerID:  req.RunnerId,
 		CompareID: req.CompareId,
 		Solution:  req.Solution,
@@ -179,9 +172,13 @@ func (g *grpcServer) UpdateTask(ctx context.Context, req *pb.UpdateTaskRequest) 
 
 			var testcases []models.TestCase
 			for _, testcase := range req.GetTestcases() {
-				id := generators.UUID()
+				id, _err := uuid.NewV7()
+				if _err != nil {
+					err = _err
+				}
+
 				testcases = append(testcases, models.TestCase{
-					ID:     id,
+					ID:     id.String(),
 					Input:  testcase.GetInput(),
 					Output: testcase.GetOutput(),
 				})
@@ -189,13 +186,20 @@ func (g *grpcServer) UpdateTask(ctx context.Context, req *pb.UpdateTaskRequest) 
 			return &testcases
 		}(),
 	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to process test cases: %v", err)
+	}
 
-	_, err := g.db.Collection("tasks").UpdateByID(ctx, req.GetId(), bson.D{{Key: "$set", Value: updatedFields}})
+	opts := options.UpdateOne().SetUpsert(true)
+
+	_, err = g.db.Collection("tasks").UpdateByID(ctx, id, bson.D{{Key: "$set", Value: updatedFields}}, opts)
 	if err != nil {
 		return nil, err
 	}
 
-	return g.GetTask(ctx, &pb.GetTaskRequest{Id: req.GetId()})
+	return &pb.SetTaskResponse{
+		Id: id,
+	}, nil
 }
 
 func (g *grpcServer) DeleteTask(ctx context.Context, req *pb.DeleteTaskRequest) (*emptypb.Empty, error) {

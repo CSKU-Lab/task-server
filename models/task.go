@@ -15,7 +15,6 @@ type Task struct {
 }
 
 type UpdateTask struct {
-	ID        *string     `bson:"_id"`
 	Solution  *string     `bson:"solution"`
 	RunnerID  *string     `bson:"runner_id"`
 	CompareID *string     `bson:"compare_id"`

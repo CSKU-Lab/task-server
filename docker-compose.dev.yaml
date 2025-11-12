@@ -22,6 +22,17 @@ services:
       MONGO_INITDB_ROOT_USERNAME: task-server
       MONGO_INITDB_ROOT_PASSWORD: task-server-password
     restart: unless-stopped
+  mongo_express:
+    container_name: task-mongo-express
+    image: mongo-express
+    ports:
+      - "9991:8081"
+    environment:
+      ME_CONFIG_MONGODB_SERVER: mongo
+      ME_CONFIG_BASICAUTH_USERNAME: username
+      ME_CONFIG_BASICAUTH_PASSWORD: password
+      ME_CONFIG_MONGODB_ADMINUSERNAME: task-server
+      ME_CONFIG_MONGODB_ADMINPASSWORD: task-server-password
 
   redis:
     container_name: task-redis

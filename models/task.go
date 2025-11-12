@@ -9,6 +9,7 @@ type TestCase struct {
 type Task struct {
 	ID        string     `bson:"_id"`
 	Solution  string     `bson:"solution"`
+	RunnerID  string     `bson:"runner_id"`
 	CompareID string     `bson:"compare_id"`
 	TestCases []TestCase `bson:"test_cases"`
 }
@@ -16,6 +17,7 @@ type Task struct {
 type UpdateTask struct {
 	ID        *string     `bson:"_id"`
 	Solution  *string     `bson:"solution"`
+	RunnerID  *string     `bson:"runner_id"`
 	CompareID *string     `bson:"compare_id"`
 	TestCases *[]TestCase `bson:"test_cases"`
 }

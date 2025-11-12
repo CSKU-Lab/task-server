@@ -12,13 +12,16 @@ import (
 
 	"github.com/CSKU-Lab/task-service/configs"
 	pb "github.com/CSKU-Lab/task-service/genproto/task/v1"
+	"github.com/CSKU-Lab/task-service/internal/generators"
 	"github.com/CSKU-Lab/task-service/models"
 	"github.com/CSKU-Lab/task-service/mongodb"
+	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 func main() {
@@ -72,36 +75,27 @@ type grpcServer struct {
 	db *mongo.Database
 }
 
-func (g *grpcServer) AddTask(ctx context.Context, req *pb.AddTaskRequest) (*pb.Task, error) {
-	if req.GetId() == "" {
-		return nil, fmt.Errorf("task id is required")
+func NewGRPCServer(db *mongo.Database) pb.TaskServiceServer {
+	return &grpcServer{
+		db: db,
+	}
+}
+
+func (g *grpcServer) CreateTask(ctx context.Context, empty *emptypb.Empty) (*pb.CreateTaskResponse, error) {
+	id, err := uuid.NewV7()
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate UUID: %v", err)
 	}
 
-	task := &models.Task{
-		ID:        req.GetId(),
-		CompareID: req.GetCompareId(),
-		Solution:  req.GetSolution(),
-		TestCases: make([]models.TestCase, 0),
-	}
-
-	for _, testcase := range req.GetTestcases() {
-		task.TestCases = append(task.TestCases, models.TestCase{
-			ID:     testcase.GetId(),
-			Input:  testcase.GetInput(),
-			Output: testcase.GetOutput(),
-		})
-	}
-
-	_, err := g.db.Collection("tasks").InsertOne(ctx, task)
+	_, err = g.db.Collection("tasks").InsertOne(ctx, bson.M{
+		"_id": id.String(),
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to insert task: %v", err)
 	}
 
-	return &pb.Task{
-		Id:        req.GetId(),
-		Solution:  req.GetSolution(),
-		Testcases: req.GetTestcases(),
-		CompareId: req.GetCompareId(),
+	return &pb.CreateTaskResponse{
+		Id: id.String(),
 	}, nil
 }
 
@@ -112,21 +106,22 @@ func (g *grpcServer) GetTasks(ctx context.Context, req *pb.GetTasksRequest) (*pb
 	}
 	defer cursor.Close(ctx)
 
-	var tasks []*pb.Task
+	var tasks []*pb.TaskResponse
 	for cursor.Next(ctx) {
 		var task models.Task
 		if err := cursor.Decode(&task); err != nil {
 			return nil, fmt.Errorf("failed to decode task: %v", err)
 		}
 
-		tasks = append(tasks, &pb.Task{
+		tasks = append(tasks, &pb.TaskResponse{
 			Id:        task.ID,
+			RunnerId:  task.RunnerID,
 			CompareId: task.CompareID,
 			Solution:  task.Solution,
-			Testcases: func() []*pb.TestCase {
-				var testcases []*pb.TestCase
+			Testcases: func() []*pb.TestCaseResponse {
+				var testcases []*pb.TestCaseResponse
 				for _, testcase := range task.TestCases {
-					testcases = append(testcases, &pb.TestCase{
+					testcases = append(testcases, &pb.TestCaseResponse{
 						Id:     testcase.ID,
 						Input:  testcase.Input,
 						Output: testcase.Output,
@@ -140,7 +135,7 @@ func (g *grpcServer) GetTasks(ctx context.Context, req *pb.GetTasksRequest) (*pb
 	return &pb.GetTasksResponse{Tasks: tasks}, nil
 }
 
-func (g *grpcServer) GetTask(ctx context.Context, req *pb.GetTaskRequest) (*pb.Task, error) {
+func (g *grpcServer) GetTask(ctx context.Context, req *pb.GetTaskRequest) (*pb.TaskResponse, error) {
 	taskID := req.GetId()
 	if taskID == "" {
 		return nil, fmt.Errorf("task id is required")
@@ -152,14 +147,15 @@ func (g *grpcServer) GetTask(ctx context.Context, req *pb.GetTaskRequest) (*pb.T
 		return nil, fmt.Errorf("failed to find task: %v", err)
 	}
 
-	return &pb.Task{
+	return &pb.TaskResponse{
 		Id:        task.ID,
+		RunnerId:  task.RunnerID,
 		CompareId: task.CompareID,
 		Solution:  task.Solution,
-		Testcases: func() []*pb.TestCase {
-			var testcases []*pb.TestCase
+		Testcases: func() []*pb.TestCaseResponse {
+			var testcases []*pb.TestCaseResponse
 			for _, testcase := range task.TestCases {
-				testcases = append(testcases, &pb.TestCase{
+				testcases = append(testcases, &pb.TestCaseResponse{
 					Id:     testcase.ID,
 					Input:  testcase.Input,
 					Output: testcase.Output,
@@ -170,11 +166,12 @@ func (g *grpcServer) GetTask(ctx context.Context, req *pb.GetTaskRequest) (*pb.T
 	}, nil
 }
 
-func (g *grpcServer) UpdateTask(ctx context.Context, req *pb.UpdateTaskRequest) (*pb.Task, error) {
+func (g *grpcServer) UpdateTask(ctx context.Context, req *pb.UpdateTaskRequest) (*pb.TaskResponse, error) {
 	updatedFields := mongodb.GetUpdatedFields(&models.UpdateTask{
 		ID:        &req.Id,
+		RunnerID:  req.RunnerId,
 		CompareID: req.CompareId,
-		Solution: req.Solution,
+		Solution:  req.Solution,
 		TestCases: func() *[]models.TestCase {
 			if len(req.GetTestcases()) == 0 {
 				return nil
@@ -182,8 +179,9 @@ func (g *grpcServer) UpdateTask(ctx context.Context, req *pb.UpdateTaskRequest) 
 
 			var testcases []models.TestCase
 			for _, testcase := range req.GetTestcases() {
+				id := generators.UUID()
 				testcases = append(testcases, models.TestCase{
-					ID:     testcase.GetId(),
+					ID:     id,
 					Input:  testcase.GetInput(),
 					Output: testcase.GetOutput(),
 				})
@@ -200,7 +198,7 @@ func (g *grpcServer) UpdateTask(ctx context.Context, req *pb.UpdateTaskRequest) 
 	return g.GetTask(ctx, &pb.GetTaskRequest{Id: req.GetId()})
 }
 
-func (g *grpcServer) DeleteTask(ctx context.Context, req *pb.DeleteTaskRequest) (*pb.DeleteTaskResponse, error) {
+func (g *grpcServer) DeleteTask(ctx context.Context, req *pb.DeleteTaskRequest) (*emptypb.Empty, error) {
 	taskID := req.GetId()
 	if taskID == "" {
 		return nil, fmt.Errorf("task id is required")
@@ -211,5 +209,5 @@ func (g *grpcServer) DeleteTask(ctx context.Context, req *pb.DeleteTaskRequest) 
 		return nil, fmt.Errorf("failed to delete task: %v", err)
 	}
 
-	return &pb.DeleteTaskResponse{}, nil
+	return &emptypb.Empty{}, nil
 }

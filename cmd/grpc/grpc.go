@@ -108,7 +108,7 @@ func (g *grpcServer) GetTasks(ctx context.Context, req *pb.GetTasksRequest) (*pb
 		var testcases []*pb.TestCase
 		for _, testcase := range task.TestCases {
 			testcases = append(testcases, &pb.TestCase{
-				Id:     testcase.ID,
+				Order:  testcase.Order,
 				Input:  testcase.Input,
 				Output: testcase.Output,
 			})
@@ -143,7 +143,7 @@ func (g *grpcServer) GetTask(ctx context.Context, req *pb.GetTaskRequest) (*pb.T
 			var testcases []*pb.TestCase
 			for _, testcase := range task.TestCases {
 				testcases = append(testcases, &pb.TestCase{
-					Id:     testcase.ID,
+					Order:  testcase.Order,
 					Input:  testcase.Input,
 					Output: testcase.Output,
 				})
@@ -174,14 +174,9 @@ func (g *grpcServer) UpsertTask(ctx context.Context, req *pb.UpsertTaskRequest) 
 			}
 
 			var testcases []models.TestCase
-			for _, testcase := range req.GetTestcases() {
-				id, _err := uuid.NewV7()
-				if _err != nil {
-					err = _err
-				}
-
+			for i, testcase := range req.GetTestcases() {
 				testcases = append(testcases, models.TestCase{
-					ID:     id.String(),
+					Order:  int32(i + 1),
 					Input:  testcase.GetInput(),
 					Output: testcase.GetOutput(),
 				})

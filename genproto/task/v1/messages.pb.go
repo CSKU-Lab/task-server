@@ -111,7 +111,7 @@ func (x *GetTasksRequest) GetIncludeSolution() bool {
 
 type TestCase struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Order         int32                  `protobuf:"varint,1,opt,name=order,proto3" json:"order,omitempty"`
 	Input         string                 `protobuf:"bytes,2,opt,name=input,proto3" json:"input,omitempty"`
 	Output        string                 `protobuf:"bytes,3,opt,name=output,proto3" json:"output,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -148,11 +148,11 @@ func (*TestCase) Descriptor() ([]byte, []int) {
 	return file_task_v1_messages_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *TestCase) GetId() string {
+func (x *TestCase) GetOrder() int32 {
 	if x != nil {
-		return x.Id
+		return x.Order
 	}
-	return ""
+	return 0
 }
 
 func (x *TestCase) GetInput() string {
@@ -513,9 +513,9 @@ const file_task_v1_messages_proto_rawDesc = "" +
 	"\x0eGetTaskRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"<\n" +
 	"\x0fGetTasksRequest\x12)\n" +
-	"\x10include_solution\x18\x01 \x01(\bR\x0fincludeSolution\"H\n" +
-	"\bTestCase\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
+	"\x10include_solution\x18\x01 \x01(\bR\x0fincludeSolution\"N\n" +
+	"\bTestCase\x12\x14\n" +
+	"\x05order\x18\x01 \x01(\x05R\x05order\x12\x14\n" +
 	"\x05input\x18\x02 \x01(\tR\x05input\x12\x16\n" +
 	"\x06output\x18\x03 \x01(\tR\x06output\"\xc5\x01\n" +
 	"\fTaskResponse\x12\x0e\n" +

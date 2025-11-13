@@ -1,7 +1,7 @@
 package models
 
 type TestCase struct {
-	ID     string `bson:"_id"`
+	Order  int32  `bson:"order"`
 	Input  string `bson:"input"`
 	Output string `bson:"output"`
 }

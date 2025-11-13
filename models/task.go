@@ -7,16 +7,16 @@ type TestCase struct {
 }
 
 type Task struct {
-	ID        string     `bson:"_id"`
-	Solution  string     `bson:"solution"`
-	RunnerID  string     `bson:"runner_id"`
-	CompareID string     `bson:"compare_id"`
-	TestCases []TestCase `bson:"test_cases"`
+	ID               string     `bson:"_id"`
+	Solution         string     `bson:"solution"`
+	AllowedRunnerIDs []string   `bson:"allowed_runner_ids"`
+	CompareID        string     `bson:"compare_id"`
+	TestCases        []TestCase `bson:"test_cases"`
 }
 
 type UpdateTask struct {
-	Solution  *string     `bson:"solution"`
-	RunnerID  *string     `bson:"runner_id"`
-	CompareID *string     `bson:"compare_id"`
-	TestCases *[]TestCase `bson:"test_cases"`
+	Solution         *string    `bson:"solution"`
+	AllowedRunnerIDs []string   `bson:"allowed_runner_ids"`
+	CompareID        *string    `bson:"compare_id"`
+	TestCases        []TestCase `bson:"test_cases"`
 }

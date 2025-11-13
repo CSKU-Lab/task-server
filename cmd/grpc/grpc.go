@@ -82,6 +82,8 @@ func NewGRPCServer(db *mongo.Database) pb.TaskServiceServer {
 	}
 }
 
+// this method is only use for postman maybe no need to use in production
+// because in main service we already pagination there and just receive task_id from there and query just only that ids is enough
 func (g *grpcServer) GetTasks(ctx context.Context, req *pb.GetTasksRequest) (*pb.GetTasksResponse, error) {
 	cursor, err := g.db.Collection("tasks").Find(ctx, bson.D{})
 	if err != nil {
@@ -96,23 +98,25 @@ func (g *grpcServer) GetTasks(ctx context.Context, req *pb.GetTasksRequest) (*pb
 			return nil, fmt.Errorf("failed to decode task: %v", err)
 		}
 
-		tasks = append(tasks, &pb.TaskResponse{
-			Id:        task.ID,
-			RunnerId:  task.RunnerID,
-			CompareId: task.CompareID,
-			Solution:  task.Solution,
-			Testcases: func() []*pb.TestCaseResponse {
-				var testcases []*pb.TestCaseResponse
-				for _, testcase := range task.TestCases {
-					testcases = append(testcases, &pb.TestCaseResponse{
-						Id:     testcase.ID,
-						Input:  testcase.Input,
-						Output: testcase.Output,
-					})
-				}
-				return testcases
-			}(),
-		})
+		taskRes := &pb.TaskResponse{
+			Id:               task.ID,
+			Solution:         task.Solution,
+			AllowedRunnerIds: task.AllowedRunnerIDs,
+			CompareScriptId:  task.CompareID,
+		}
+
+		var testcases []*pb.TestCase
+		for _, testcase := range task.TestCases {
+			testcases = append(testcases, &pb.TestCase{
+				Id:     testcase.ID,
+				Input:  testcase.Input,
+				Output: testcase.Output,
+			})
+		}
+
+		taskRes.Testcases = testcases
+
+		tasks = append(tasks, taskRes)
 	}
 
 	return &pb.GetTasksResponse{Tasks: tasks}, nil
@@ -131,14 +135,14 @@ func (g *grpcServer) GetTask(ctx context.Context, req *pb.GetTaskRequest) (*pb.T
 	}
 
 	return &pb.TaskResponse{
-		Id:        task.ID,
-		RunnerId:  task.RunnerID,
-		CompareId: task.CompareID,
-		Solution:  task.Solution,
-		Testcases: func() []*pb.TestCaseResponse {
-			var testcases []*pb.TestCaseResponse
+		Id:               task.ID,
+		Solution:         task.Solution,
+		AllowedRunnerIds: task.AllowedRunnerIDs,
+		CompareScriptId:  task.CompareID,
+		Testcases: func() []*pb.TestCase {
+			var testcases []*pb.TestCase
 			for _, testcase := range task.TestCases {
-				testcases = append(testcases, &pb.TestCaseResponse{
+				testcases = append(testcases, &pb.TestCase{
 					Id:     testcase.ID,
 					Input:  testcase.Input,
 					Output: testcase.Output,
@@ -149,7 +153,7 @@ func (g *grpcServer) GetTask(ctx context.Context, req *pb.GetTaskRequest) (*pb.T
 	}, nil
 }
 
-func (g *grpcServer) SetTask(ctx context.Context, req *pb.SetTaskRequest) (*pb.SetTaskResponse, error) {
+func (g *grpcServer) UpsertTask(ctx context.Context, req *pb.UpsertTaskRequest) (*pb.UpsertTaskResponse, error) {
 	id := req.GetId()
 	if id == "" {
 		uuid, err := uuid.NewV7()
@@ -160,12 +164,11 @@ func (g *grpcServer) SetTask(ctx context.Context, req *pb.SetTaskRequest) (*pb.S
 	}
 
 	var err error
-
 	updatedFields := mongodb.GetUpdatedFields(&models.UpdateTask{
-		RunnerID:  req.RunnerId,
-		CompareID: req.CompareId,
-		Solution:  req.Solution,
-		TestCases: func() *[]models.TestCase {
+		Solution:         req.Solution,
+		AllowedRunnerIDs: req.AllowedRunnerIds,
+		CompareID:        req.CompareId,
+		TestCases: func() []models.TestCase {
 			if len(req.GetTestcases()) == 0 {
 				return nil
 			}
@@ -183,7 +186,7 @@ func (g *grpcServer) SetTask(ctx context.Context, req *pb.SetTaskRequest) (*pb.S
 					Output: testcase.GetOutput(),
 				})
 			}
-			return &testcases
+			return testcases
 		}(),
 	})
 	if err != nil {
@@ -197,7 +200,7 @@ func (g *grpcServer) SetTask(ctx context.Context, req *pb.SetTaskRequest) (*pb.S
 		return nil, err
 	}
 
-	return &pb.SetTaskResponse{
+	return &pb.UpsertTaskResponse{
 		Id: id,
 	}, nil
 }

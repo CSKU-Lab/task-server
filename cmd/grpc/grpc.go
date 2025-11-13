@@ -163,13 +163,18 @@ func (g *grpcServer) UpsertTask(ctx context.Context, req *pb.UpsertTaskRequest) 
 		id = uuid.String()
 	}
 
+	allowedRunnerIDs := req.GetAllowedRunnerIds()
+	if allowedRunnerIDs == nil {
+		allowedRunnerIDs = []string{}
+	}
+
 	updatedFields := mongodb.GetUpdatedFields(&models.UpdateTask{
 		Solution:         req.Solution,
-		AllowedRunnerIDs: req.AllowedRunnerIds,
+		AllowedRunnerIDs: allowedRunnerIDs,
 		CompareID:        req.CompareId,
 		TestCases: func() []models.TestCase {
 			if len(req.GetTestcases()) == 0 {
-				return nil
+				return []models.TestCase{}
 			}
 
 			var testcases []models.TestCase

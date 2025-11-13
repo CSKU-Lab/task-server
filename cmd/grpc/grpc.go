@@ -163,7 +163,6 @@ func (g *grpcServer) UpsertTask(ctx context.Context, req *pb.UpsertTaskRequest) 
 		id = uuid.String()
 	}
 
-	var err error
 	updatedFields := mongodb.GetUpdatedFields(&models.UpdateTask{
 		Solution:         req.Solution,
 		AllowedRunnerIDs: req.AllowedRunnerIds,
@@ -174,9 +173,9 @@ func (g *grpcServer) UpsertTask(ctx context.Context, req *pb.UpsertTaskRequest) 
 			}
 
 			var testcases []models.TestCase
-			for i, testcase := range req.GetTestcases() {
+			for _, testcase := range req.GetTestcases() {
 				testcases = append(testcases, models.TestCase{
-					Order:  int32(i + 1),
+					Order:  testcase.GetOrder(),
 					Input:  testcase.GetInput(),
 					Output: testcase.GetOutput(),
 				})
@@ -184,13 +183,10 @@ func (g *grpcServer) UpsertTask(ctx context.Context, req *pb.UpsertTaskRequest) 
 			return testcases
 		}(),
 	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to process test cases: %v", err)
-	}
 
 	opts := options.UpdateOne().SetUpsert(true)
 
-	_, err = g.db.Collection("tasks").UpdateByID(ctx, id, bson.D{{Key: "$set", Value: updatedFields}}, opts)
+	_, err := g.db.Collection("tasks").UpdateByID(ctx, id, bson.D{{Key: "$set", Value: updatedFields}}, opts)
 	if err != nil {
 		return nil, err
 	}

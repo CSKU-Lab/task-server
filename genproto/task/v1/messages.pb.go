@@ -289,63 +289,11 @@ func (x *GetTasksResponse) GetTasks() []*TaskResponse {
 	return nil
 }
 
-type UpsertTestCase struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Input         string                 `protobuf:"bytes,1,opt,name=input,proto3" json:"input,omitempty"`
-	Output        string                 `protobuf:"bytes,2,opt,name=output,proto3" json:"output,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *UpsertTestCase) Reset() {
-	*x = UpsertTestCase{}
-	mi := &file_task_v1_messages_proto_msgTypes[5]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *UpsertTestCase) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*UpsertTestCase) ProtoMessage() {}
-
-func (x *UpsertTestCase) ProtoReflect() protoreflect.Message {
-	mi := &file_task_v1_messages_proto_msgTypes[5]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use UpsertTestCase.ProtoReflect.Descriptor instead.
-func (*UpsertTestCase) Descriptor() ([]byte, []int) {
-	return file_task_v1_messages_proto_rawDescGZIP(), []int{5}
-}
-
-func (x *UpsertTestCase) GetInput() string {
-	if x != nil {
-		return x.Input
-	}
-	return ""
-}
-
-func (x *UpsertTestCase) GetOutput() string {
-	if x != nil {
-		return x.Output
-	}
-	return ""
-}
-
 type UpsertTaskRequest struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Id               *string                `protobuf:"bytes,1,opt,name=id,proto3,oneof" json:"id,omitempty"`
 	Solution         *string                `protobuf:"bytes,2,opt,name=solution,proto3,oneof" json:"solution,omitempty"`
-	Testcases        []*UpsertTestCase      `protobuf:"bytes,3,rep,name=testcases,proto3" json:"testcases,omitempty"`
+	Testcases        []*TestCase            `protobuf:"bytes,3,rep,name=testcases,proto3" json:"testcases,omitempty"`
 	AllowedRunnerIds []string               `protobuf:"bytes,4,rep,name=allowed_runner_ids,json=allowedRunnerIds,proto3" json:"allowed_runner_ids,omitempty"`
 	CompareId        *string                `protobuf:"bytes,5,opt,name=compare_id,json=compareId,proto3,oneof" json:"compare_id,omitempty"`
 	unknownFields    protoimpl.UnknownFields
@@ -354,7 +302,7 @@ type UpsertTaskRequest struct {
 
 func (x *UpsertTaskRequest) Reset() {
 	*x = UpsertTaskRequest{}
-	mi := &file_task_v1_messages_proto_msgTypes[6]
+	mi := &file_task_v1_messages_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -366,7 +314,7 @@ func (x *UpsertTaskRequest) String() string {
 func (*UpsertTaskRequest) ProtoMessage() {}
 
 func (x *UpsertTaskRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_task_v1_messages_proto_msgTypes[6]
+	mi := &file_task_v1_messages_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -379,7 +327,7 @@ func (x *UpsertTaskRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpsertTaskRequest.ProtoReflect.Descriptor instead.
 func (*UpsertTaskRequest) Descriptor() ([]byte, []int) {
-	return file_task_v1_messages_proto_rawDescGZIP(), []int{6}
+	return file_task_v1_messages_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *UpsertTaskRequest) GetId() string {
@@ -396,7 +344,7 @@ func (x *UpsertTaskRequest) GetSolution() string {
 	return ""
 }
 
-func (x *UpsertTaskRequest) GetTestcases() []*UpsertTestCase {
+func (x *UpsertTaskRequest) GetTestcases() []*TestCase {
 	if x != nil {
 		return x.Testcases
 	}
@@ -426,7 +374,7 @@ type UpsertTaskResponse struct {
 
 func (x *UpsertTaskResponse) Reset() {
 	*x = UpsertTaskResponse{}
-	mi := &file_task_v1_messages_proto_msgTypes[7]
+	mi := &file_task_v1_messages_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -438,7 +386,7 @@ func (x *UpsertTaskResponse) String() string {
 func (*UpsertTaskResponse) ProtoMessage() {}
 
 func (x *UpsertTaskResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_task_v1_messages_proto_msgTypes[7]
+	mi := &file_task_v1_messages_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -451,7 +399,7 @@ func (x *UpsertTaskResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpsertTaskResponse.ProtoReflect.Descriptor instead.
 func (*UpsertTaskResponse) Descriptor() ([]byte, []int) {
-	return file_task_v1_messages_proto_rawDescGZIP(), []int{7}
+	return file_task_v1_messages_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *UpsertTaskResponse) GetId() string {
@@ -470,7 +418,7 @@ type DeleteTaskRequest struct {
 
 func (x *DeleteTaskRequest) Reset() {
 	*x = DeleteTaskRequest{}
-	mi := &file_task_v1_messages_proto_msgTypes[8]
+	mi := &file_task_v1_messages_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -482,7 +430,7 @@ func (x *DeleteTaskRequest) String() string {
 func (*DeleteTaskRequest) ProtoMessage() {}
 
 func (x *DeleteTaskRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_task_v1_messages_proto_msgTypes[8]
+	mi := &file_task_v1_messages_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -495,7 +443,7 @@ func (x *DeleteTaskRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteTaskRequest.ProtoReflect.Descriptor instead.
 func (*DeleteTaskRequest) Descriptor() ([]byte, []int) {
-	return file_task_v1_messages_proto_rawDescGZIP(), []int{8}
+	return file_task_v1_messages_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *DeleteTaskRequest) GetId() string {
@@ -525,14 +473,11 @@ const file_task_v1_messages_proto_rawDesc = "" +
 	"\x12allowed_runner_ids\x18\x04 \x03(\tR\x10allowedRunnerIds\x12*\n" +
 	"\x11compare_script_id\x18\x05 \x01(\tR\x0fcompareScriptId\"?\n" +
 	"\x10GetTasksResponse\x12+\n" +
-	"\x05tasks\x18\x01 \x03(\v2\x15.task.v1.TaskResponseR\x05tasks\">\n" +
-	"\x0eUpsertTestCase\x12\x14\n" +
-	"\x05input\x18\x01 \x01(\tR\x05input\x12\x16\n" +
-	"\x06output\x18\x02 \x01(\tR\x06output\"\xf5\x01\n" +
+	"\x05tasks\x18\x01 \x03(\v2\x15.task.v1.TaskResponseR\x05tasks\"\xef\x01\n" +
 	"\x11UpsertTaskRequest\x12\x13\n" +
 	"\x02id\x18\x01 \x01(\tH\x00R\x02id\x88\x01\x01\x12\x1f\n" +
-	"\bsolution\x18\x02 \x01(\tH\x01R\bsolution\x88\x01\x01\x125\n" +
-	"\ttestcases\x18\x03 \x03(\v2\x17.task.v1.UpsertTestCaseR\ttestcases\x12,\n" +
+	"\bsolution\x18\x02 \x01(\tH\x01R\bsolution\x88\x01\x01\x12/\n" +
+	"\ttestcases\x18\x03 \x03(\v2\x11.task.v1.TestCaseR\ttestcases\x12,\n" +
 	"\x12allowed_runner_ids\x18\x04 \x03(\tR\x10allowedRunnerIds\x12\"\n" +
 	"\n" +
 	"compare_id\x18\x05 \x01(\tH\x02R\tcompareId\x88\x01\x01B\x05\n" +
@@ -557,22 +502,21 @@ func file_task_v1_messages_proto_rawDescGZIP() []byte {
 	return file_task_v1_messages_proto_rawDescData
 }
 
-var file_task_v1_messages_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_task_v1_messages_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_task_v1_messages_proto_goTypes = []any{
 	(*GetTaskRequest)(nil),     // 0: task.v1.GetTaskRequest
 	(*GetTasksRequest)(nil),    // 1: task.v1.GetTasksRequest
 	(*TestCase)(nil),           // 2: task.v1.TestCase
 	(*TaskResponse)(nil),       // 3: task.v1.TaskResponse
 	(*GetTasksResponse)(nil),   // 4: task.v1.GetTasksResponse
-	(*UpsertTestCase)(nil),     // 5: task.v1.UpsertTestCase
-	(*UpsertTaskRequest)(nil),  // 6: task.v1.UpsertTaskRequest
-	(*UpsertTaskResponse)(nil), // 7: task.v1.UpsertTaskResponse
-	(*DeleteTaskRequest)(nil),  // 8: task.v1.DeleteTaskRequest
+	(*UpsertTaskRequest)(nil),  // 5: task.v1.UpsertTaskRequest
+	(*UpsertTaskResponse)(nil), // 6: task.v1.UpsertTaskResponse
+	(*DeleteTaskRequest)(nil),  // 7: task.v1.DeleteTaskRequest
 }
 var file_task_v1_messages_proto_depIdxs = []int32{
 	2, // 0: task.v1.TaskResponse.testcases:type_name -> task.v1.TestCase
 	3, // 1: task.v1.GetTasksResponse.tasks:type_name -> task.v1.TaskResponse
-	5, // 2: task.v1.UpsertTaskRequest.testcases:type_name -> task.v1.UpsertTestCase
+	2, // 2: task.v1.UpsertTaskRequest.testcases:type_name -> task.v1.TestCase
 	3, // [3:3] is the sub-list for method output_type
 	3, // [3:3] is the sub-list for method input_type
 	3, // [3:3] is the sub-list for extension type_name
@@ -585,14 +529,14 @@ func file_task_v1_messages_proto_init() {
 	if File_task_v1_messages_proto != nil {
 		return
 	}
-	file_task_v1_messages_proto_msgTypes[6].OneofWrappers = []any{}
+	file_task_v1_messages_proto_msgTypes[5].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_task_v1_messages_proto_rawDesc), len(file_task_v1_messages_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   9,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

@@ -1,0 +1,24 @@
+FROM golang:1.25-bookworm AS builder
+
+WORKDIR /app
+
+# Download dependencies first to leverage Docker layer caching
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy source code and build the gRPC server binary
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /app/bin/task-service ./cmd/grpc
+
+FROM gcr.io/distroless/base-debian12 AS runtime
+
+WORKDIR /app
+
+# Provide sensible defaults expected by the application.
+ENV ENV=docker \
+    PORT=50051
+
+COPY --from=builder /app/bin/task-service /app/task-service
+
+EXPOSE 50051
+ENTRYPOINT ["/app/task-service"]

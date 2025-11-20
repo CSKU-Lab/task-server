@@ -103,6 +103,16 @@ func (g *grpcServer) GetTasks(ctx context.Context, req *pb.GetTasksRequest) (*pb
 			Solution:         task.Solution,
 			AllowedRunnerIds: task.AllowedRunnerIDs,
 			CompareScriptId:  task.CompareID,
+			Limit: &pb.Limit{
+				CpuTime:      task.Limit.CpuTime,
+				CpuExtraTime: task.Limit.CpuExtraTime,
+				WallTime:     task.Limit.WallTime,
+				Memory:       task.Limit.Memory,
+				Stack:        task.Limit.Stack,
+				MaxOpenFiles: task.Limit.MaxOpenFiles,
+				MaxFileSize:  task.Limit.MaxFileSize,
+				NetworkAllow: task.Limit.NetworkAllow,
+			},
 		}
 
 		var testcases []*pb.TestCase
@@ -150,6 +160,16 @@ func (g *grpcServer) GetTask(ctx context.Context, req *pb.GetTaskRequest) (*pb.T
 			}
 			return testcases
 		}(),
+		Limit: &pb.Limit{
+			CpuTime:      task.Limit.CpuTime,
+			CpuExtraTime: task.Limit.CpuExtraTime,
+			WallTime:     task.Limit.WallTime,
+			Memory:       task.Limit.Memory,
+			Stack:        task.Limit.Stack,
+			MaxOpenFiles: task.Limit.MaxOpenFiles,
+			MaxFileSize:  task.Limit.MaxFileSize,
+			NetworkAllow: task.Limit.NetworkAllow,
+		},
 	}, nil
 }
 
@@ -187,6 +207,16 @@ func (g *grpcServer) UpsertTask(ctx context.Context, req *pb.UpsertTaskRequest) 
 			}
 			return testcases
 		}(),
+		Limit: &models.Limit{
+			CpuTime:      req.GetLimit().GetCpuTime(),
+			CpuExtraTime: req.GetLimit().GetCpuExtraTime(),
+			WallTime:     req.GetLimit().GetWallTime(),
+			Memory:       req.GetLimit().GetMemory(),
+			Stack:        req.GetLimit().GetStack(),
+			MaxOpenFiles: req.GetLimit().GetMaxOpenFiles(),
+			MaxFileSize:  req.GetLimit().GetMaxFileSize(),
+			NetworkAllow: req.GetLimit().GetNetworkAllow(),
+		},
 	})
 
 	opts := options.UpdateOne().SetUpsert(true)

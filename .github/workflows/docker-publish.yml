@@ -14,6 +14,10 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    env:
+      IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/task-server
+      DOCKERFILE_PATH: Dockerfile.prod
+      CONTEXT_PATH: .
 
     steps:
       - name: Checkout repository

@@ -7,10 +7,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-type env struct {
-	mongoUri string
-	port     string
-}
+type env map[string]string
 
 func NewEnv() *env {
 	if os.Getenv("ENV") == "" {
@@ -27,21 +24,16 @@ func NewEnv() *env {
 	}
 
 	return &env{
-		mongoUri: os.Getenv("MONGO_URI"),
-		port:     os.Getenv("PORT"),
+		"MONGO_URI":     os.Getenv("MONGO_URI"),
+		"PORT":         os.Getenv("PORT"),
+		"DATABASE_NAME": os.Getenv("DATABASE_NAME"),
 	}
 }
 
-func (m *env) GetMongoURI() string {
-	if m.mongoUri == "" {
-		log.Fatalln("You forget to set the MONGO_URI environment variable!")
+func (m *env) Get(key string) string {
+	val, exists := (*m)[key]
+	if !exists {
+		log.Fatalf("Environment variable %s not found!", key)
 	}
-	return m.mongoUri
-}
-
-func (m *env) GetPort() string {
-	if m.port == "" {
-		log.Fatalln("You forget to set the PORT environment variable!")
-	}
-	return m.port
+	return val
 }

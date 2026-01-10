@@ -166,7 +166,7 @@ func (g *grpcServer) GetTasks(ctx context.Context, req *pb.GetTasksRequest) (*pb
 			Limit:            taskLimit,
 			Testcases:        testcases,
 			SolutionFiles:    solutionFiles,
-			SolutionRunnerId: &task.SolutionRunnerID,
+			SolutionRunnerId: task.SolutionRunnerID,
 		}
 
 		tasks = append(tasks, taskRes)
@@ -226,6 +226,7 @@ func (g *grpcServer) GetTask(ctx context.Context, req *pb.GetTaskRequest) (*pb.T
 		Testcases:        testcases,
 		Limit:            taskLimit,
 		SolutionFiles:    solutionFiles,
+		SolutionRunnerId: task.SolutionRunnerID,
 	}, nil
 }
 
@@ -331,20 +332,12 @@ func (g *grpcServer) UpdateTask(ctx context.Context, req *pb.UpdateTaskRequest) 
 			testcases = newTestcases
 		}
 
-		graderTestcases := make([]*graderPB.TestCaseRequest, len(testcases))
-		for i, testcase := range testcases {
-			graderTestcases[i] = &graderPB.TestCaseRequest{
-				Order: testcase.Order,
-				Input: testcase.Input,
-			}
-		}
-
 		solutionRunnerId := task.SolutionRunnerID
 		if req.GetSolutionRunnerId() != "" {
-			solutionRunnerId = req.GetSolutionRunnerId()
+			solutionRunnerId = req.SolutionRunnerId
 		}
 
-		if solutionRunnerId == "" && len(testcases) > 0 {
+		if solutionRunnerId == nil && len(testcases) > 0 {
 			return nil, status.Error(codes.InvalidArgument, "solution runner id is required to generate test cases")
 		}
 
@@ -353,10 +346,18 @@ func (g *grpcServer) UpdateTask(ctx context.Context, req *pb.UpdateTaskRequest) 
 		}
 
 		if len(testcases) > 0 {
+			graderTestcases := make([]*graderPB.TestCaseRequest, len(testcases))
+			for i, testcase := range testcases {
+				graderTestcases[i] = &graderPB.TestCaseRequest{
+					Order: testcase.Order,
+					Input: testcase.Input,
+				}
+			}
+
 			res, err := g.graderClient.GenerateTestCases(ctx, &graderPB.GenerateTestCasesRequest{
 				Files:     graderSolutionFiles,
 				Testcases: graderTestcases,
-				RunnerId:  solutionRunnerId,
+				RunnerId:  *solutionRunnerId,
 				Limit:     graderLimit,
 			})
 			if err != nil {

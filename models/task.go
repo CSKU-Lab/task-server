@@ -25,7 +25,7 @@ type SolutionFile struct {
 type Task struct {
 	ID               string         `bson:"_id"`
 	SolutionFiles    []SolutionFile `bson:"solution_files"`
-	SolutionRunnerID string         `bson:"solution_runner_id"`
+	SolutionRunnerID *string        `bson:"solution_runner_id"`
 	AllowedRunnerIDs []string       `bson:"allowed_runner_ids"`
 	CompareID        *string        `bson:"compare_id"`
 	TestCases        []TestCase     `bson:"testcases"`

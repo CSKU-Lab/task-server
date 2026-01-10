@@ -17,19 +17,25 @@ type Limit struct {
 	NetworkAllow bool    `bson:"network_allow"`
 }
 
+type SolutionFile struct {
+	Name    string `bson:"name"`
+	Content string `bson:"content"`
+}
+
 type Task struct {
-	ID               string     `bson:"_id"`
-	Solution         string     `bson:"solution"`
-	AllowedRunnerIDs []string   `bson:"allowed_runner_ids"`
-	CompareID        string     `bson:"compare_id"`
-	TestCases        []TestCase `bson:"test_cases"`
-	Limit            Limit      `bson:"limit"`
+	ID               string         `bson:"_id"`
+	SolutionFiles    []SolutionFile `bson:"solution_files"`
+	SolutionRunnerID string         `bson:"solution_runner_id"`
+	AllowedRunnerIDs []string       `bson:"allowed_runner_ids"`
+	CompareID        *string        `bson:"compare_id"`
+	TestCases        []TestCase     `bson:"testcases"`
+	Limit            *Limit         `bson:"limit"`
 }
 
 type UpdateTask struct {
-	Solution         *string    `bson:"solution"`
-	AllowedRunnerIDs []string   `bson:"allowed_runner_ids"`
-	CompareID        *string    `bson:"compare_id"`
-	TestCases        []TestCase `bson:"test_cases"`
-	Limit            *Limit     `bson:"limit"`
+	AllowedRunnerIDs []string       `bson:"allowed_runner_ids"`
+	CompareID        *string        `bson:"compare_id"`
+	Limit            *Limit         `bson:"limit"`
+	SolutionRunnerID *string        `bson:"solution_runner_id"`
+	SolutionFiles    []SolutionFile `bson:"solution_files"`
 }

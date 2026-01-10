@@ -6,11 +6,11 @@ import (
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
-func GetUpdatedFields(i any) bson.D {
+func GetUpdatedFields(i any) bson.M {
 	v := reflect.ValueOf(i).Elem()
 	t := reflect.TypeOf(i).Elem()
 
-	fields := bson.D{}
+	fields := make(bson.M)
 	for i := range v.NumField() {
 		fieldVal := v.Field(i)
 		fieldTyp := t.Field(i)
@@ -21,11 +21,11 @@ func GetUpdatedFields(i any) bson.D {
 		}
 
 		val := fieldVal.Interface()
-		if fieldVal.Kind() == reflect.Ptr {
+		if fieldVal.Kind() == reflect.Pointer {
 			val = fieldVal.Elem().Interface()
 		}
 
-		fields = append(fields, bson.E{Key: bsonTag, Value: val})
+		fields[bsonTag] = val
 	}
 
 	return fields

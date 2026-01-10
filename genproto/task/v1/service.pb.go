@@ -25,37 +25,41 @@ var File_task_v1_service_proto protoreflect.FileDescriptor
 
 const file_task_v1_service_proto_rawDesc = "" +
 	"\n" +
-	"\x15task/v1/service.proto\x12\atask.v1\x1a\x16task/v1/messages.proto\x1a\x1bgoogle/protobuf/empty.proto2\x92\x02\n" +
+	"\x15task/v1/service.proto\x12\atask.v1\x1a\x16task/v1/messages.proto\x1a\x1bgoogle/protobuf/empty.proto2\xd0\x02\n" +
 	"\vTaskService\x12?\n" +
 	"\bGetTasks\x12\x18.task.v1.GetTasksRequest\x1a\x19.task.v1.GetTasksResponse\x129\n" +
-	"\aGetTask\x12\x17.task.v1.GetTaskRequest\x1a\x15.task.v1.TaskResponse\x12E\n" +
+	"\aGetTask\x12\x17.task.v1.GetTaskRequest\x1a\x15.task.v1.TaskResponse\x12A\n" +
 	"\n" +
-	"UpsertTask\x12\x1a.task.v1.UpsertTaskRequest\x1a\x1b.task.v1.UpsertTaskResponse\x12@\n" +
+	"CreateTask\x12\x16.google.protobuf.Empty\x1a\x1b.task.v1.CreateTaskResponse\x12@\n" +
 	"\n" +
-	"DeleteTask\x12\x1a.task.v1.DeleteTaskRequest\x1a\x16.google.protobuf.EmptyB\x88\x01\n" +
-	"\vcom.task.v1B\fServiceProtoP\x01Z.github.com/CSKU-Lab/config-server/grpc/task/v1\xa2\x02\x03TXX\xaa\x02\aTask.V1\xca\x02\aTask\\V1\xe2\x02\x13Task\\V1\\GPBMetadata\xea\x02\bTask::V1b\x06proto3"
+	"UpdateTask\x12\x1a.task.v1.UpdateTaskRequest\x1a\x16.google.protobuf.Empty\x12@\n" +
+	"\n" +
+	"DeleteTask\x12\x1a.task.v1.DeleteTaskRequest\x1a\x16.google.protobuf.EmptyB\x87\x01\n" +
+	"\vcom.task.v1B\fServiceProtoP\x01Z-github.com/CSKU-Lab/task-service/grpc/task/v1\xa2\x02\x03TXX\xaa\x02\aTask.V1\xca\x02\aTask\\V1\xe2\x02\x13Task\\V1\\GPBMetadata\xea\x02\bTask::V1b\x06proto3"
 
 var file_task_v1_service_proto_goTypes = []any{
 	(*GetTasksRequest)(nil),    // 0: task.v1.GetTasksRequest
 	(*GetTaskRequest)(nil),     // 1: task.v1.GetTaskRequest
-	(*UpsertTaskRequest)(nil),  // 2: task.v1.UpsertTaskRequest
-	(*DeleteTaskRequest)(nil),  // 3: task.v1.DeleteTaskRequest
-	(*GetTasksResponse)(nil),   // 4: task.v1.GetTasksResponse
-	(*TaskResponse)(nil),       // 5: task.v1.TaskResponse
-	(*UpsertTaskResponse)(nil), // 6: task.v1.UpsertTaskResponse
-	(*emptypb.Empty)(nil),      // 7: google.protobuf.Empty
+	(*emptypb.Empty)(nil),      // 2: google.protobuf.Empty
+	(*UpdateTaskRequest)(nil),  // 3: task.v1.UpdateTaskRequest
+	(*DeleteTaskRequest)(nil),  // 4: task.v1.DeleteTaskRequest
+	(*GetTasksResponse)(nil),   // 5: task.v1.GetTasksResponse
+	(*TaskResponse)(nil),       // 6: task.v1.TaskResponse
+	(*CreateTaskResponse)(nil), // 7: task.v1.CreateTaskResponse
 }
 var file_task_v1_service_proto_depIdxs = []int32{
 	0, // 0: task.v1.TaskService.GetTasks:input_type -> task.v1.GetTasksRequest
 	1, // 1: task.v1.TaskService.GetTask:input_type -> task.v1.GetTaskRequest
-	2, // 2: task.v1.TaskService.UpsertTask:input_type -> task.v1.UpsertTaskRequest
-	3, // 3: task.v1.TaskService.DeleteTask:input_type -> task.v1.DeleteTaskRequest
-	4, // 4: task.v1.TaskService.GetTasks:output_type -> task.v1.GetTasksResponse
-	5, // 5: task.v1.TaskService.GetTask:output_type -> task.v1.TaskResponse
-	6, // 6: task.v1.TaskService.UpsertTask:output_type -> task.v1.UpsertTaskResponse
-	7, // 7: task.v1.TaskService.DeleteTask:output_type -> google.protobuf.Empty
-	4, // [4:8] is the sub-list for method output_type
-	0, // [0:4] is the sub-list for method input_type
+	2, // 2: task.v1.TaskService.CreateTask:input_type -> google.protobuf.Empty
+	3, // 3: task.v1.TaskService.UpdateTask:input_type -> task.v1.UpdateTaskRequest
+	4, // 4: task.v1.TaskService.DeleteTask:input_type -> task.v1.DeleteTaskRequest
+	5, // 5: task.v1.TaskService.GetTasks:output_type -> task.v1.GetTasksResponse
+	6, // 6: task.v1.TaskService.GetTask:output_type -> task.v1.TaskResponse
+	7, // 7: task.v1.TaskService.CreateTask:output_type -> task.v1.CreateTaskResponse
+	2, // 8: task.v1.TaskService.UpdateTask:output_type -> google.protobuf.Empty
+	2, // 9: task.v1.TaskService.DeleteTask:output_type -> google.protobuf.Empty
+	5, // [5:10] is the sub-list for method output_type
+	0, // [0:5] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
 	0, // [0:0] is the sub-list for extension extendee
 	0, // [0:0] is the sub-list for field type_name

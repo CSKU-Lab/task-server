@@ -28,7 +28,7 @@ type Task struct {
 	SolutionRunnerID *string        `bson:"solution_runner_id"`
 	AllowedRunnerIDs []string       `bson:"allowed_runner_ids"`
 	CompareID        *string        `bson:"compare_id"`
-	TestCases        []TestCase     `bson:"testcases"`
+	TestCases        []TestCase     `bson:"test_cases"`
 	Limit            *Limit         `bson:"limit"`
 }
 

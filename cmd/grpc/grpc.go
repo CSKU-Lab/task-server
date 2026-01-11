@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -164,7 +163,7 @@ func (g *grpcServer) GetTasks(ctx context.Context, req *pb.GetTasksRequest) (*pb
 			AllowedRunnerIds: task.AllowedRunnerIDs,
 			CompareScriptId:  task.CompareID,
 			Limit:            taskLimit,
-			Testcases:        testcases,
+			TestCases:        testcases,
 			SolutionFiles:    solutionFiles,
 			SolutionRunnerId: task.SolutionRunnerID,
 		}
@@ -223,7 +222,7 @@ func (g *grpcServer) GetTask(ctx context.Context, req *pb.GetTaskRequest) (*pb.T
 		Id:               task.ID,
 		AllowedRunnerIds: task.AllowedRunnerIDs,
 		CompareScriptId:  task.CompareID,
-		Testcases:        testcases,
+		TestCases:        testcases,
 		Limit:            taskLimit,
 		SolutionFiles:    solutionFiles,
 		SolutionRunnerId: task.SolutionRunnerID,
@@ -248,6 +247,12 @@ func (g *grpcServer) CreateTask(ctx context.Context, req *emptypb.Empty) (*pb.Cr
 }
 
 func (g *grpcServer) UpdateTask(ctx context.Context, req *pb.UpdateTaskRequest) (*emptypb.Empty, error) {
+	updatedFields := mongodb.GetUpdatedFields(&models.UpdateTask{
+		AllowedRunnerIDs: req.AllowedRunnerIds,
+		CompareID:        req.CompareScriptId,
+		SolutionRunnerID: req.SolutionRunnerId,
+	})
+
 	var limit *models.Limit
 	if req.GetLimit() != nil {
 		limit = &models.Limit{
@@ -260,125 +265,53 @@ func (g *grpcServer) UpdateTask(ctx context.Context, req *pb.UpdateTaskRequest) 
 			MaxFileSize:  req.GetLimit().GetMaxFileSize(),
 			NetworkAllow: req.GetLimit().GetNetworkAllow(),
 		}
+		updatedFields["limit"] = limit
 	}
 
-	updatedFields := mongodb.GetUpdatedFields(&models.UpdateTask{
-		AllowedRunnerIDs: req.AllowedRunnerIds,
-		CompareID:        req.CompareScriptId,
-		Limit:            limit,
-		SolutionRunnerID: req.SolutionRunnerId,
+	var solutionFiles []models.SolutionFile
+	if req.GetSolutionFiles() != nil {
+		newSolutionFiles := make([]models.SolutionFile, len(req.GetSolutionFiles()))
+		for i, file := range req.GetSolutionFiles() {
+			newSolutionFiles[i] = models.SolutionFile{
+				Name:    file.GetName(),
+				Content: file.GetContent(),
+			}
+		}
+
+		solutionFiles = newSolutionFiles
+	} else {
+		solutionFiles = []models.SolutionFile{}
+	}
+
+	updatedFields["solution_files"] = solutionFiles
+
+	var testcases []models.TestCase
+	if req.GetTestCases() != nil {
+		newTestcases := make([]models.TestCase, len(req.GetTestCases()))
+		for i, testcase := range req.GetTestCases() {
+			newTestcases[i] = models.TestCase{
+				Order: testcase.GetOrder(),
+				Input: testcase.GetInput(),
+			}
+		}
+		testcases = newTestcases
+	} else {
+		testcases = []models.TestCase{}
+	}
+
+	updateTestCases, err := g.generateTestCases(ctx, generateTestCasesPayload{
+		solutionRunnerID: req.GetSolutionRunnerId(),
+		solutionFiles:    solutionFiles,
+		testcases:        testcases,
+		limit:            limit,
 	})
-
-	// re generate test cases if solution files, solution runner id or test cases are updated
-	if req.GetSolutionFiles() != nil || req.GetSolutionRunnerId() != "" || req.GetTestcases() != nil || req.GetLimit() != nil {
-		task, err := g.getTask(ctx, req.GetId())
-		if err != nil {
-			if errors.Is(err, mongo.ErrNoDocuments) {
-				return nil, status.Error(codes.NotFound, "task not found")
-			}
-			return nil, err
-		}
-
-		if limit == nil {
-			limit = task.Limit
-		}
-
-		var graderLimit *graderPB.Limit
-		if limit != nil {
-			graderLimit = &graderPB.Limit{
-				CpuTime:      limit.CpuTime,
-				CpuExtraTime: limit.CpuExtraTime,
-				WallTime:     limit.WallTime,
-				Memory:       limit.Memory,
-				Stack:        limit.Stack,
-				MaxOpenFiles: limit.MaxOpenFiles,
-				MaxFileSize:  limit.MaxFileSize,
-				NetworkAllow: limit.NetworkAllow,
-			}
-		}
-
-		solutionFiles := task.SolutionFiles
-		if req.GetSolutionFiles() != nil {
-			newSolutionFiles := make([]models.SolutionFile, 0, len(req.GetSolutionFiles()))
-			for _, file := range req.GetSolutionFiles() {
-				newSolutionFiles = append(newSolutionFiles, models.SolutionFile{
-					Name:    file.GetName(),
-					Content: file.GetContent(),
-				})
-
-			}
-
-			solutionFiles = newSolutionFiles
-			updatedFields["solution_files"] = newSolutionFiles
-		}
-
-		graderSolutionFiles := make([]*graderPB.File, len(solutionFiles))
-		for i, file := range solutionFiles {
-			graderSolutionFiles[i] = &graderPB.File{
-				Name:    file.Name,
-				Content: file.Content,
-			}
-		}
-
-		testcases := task.TestCases
-		if req.GetTestcases() != nil {
-			newTestcases := make([]models.TestCase, len(req.GetTestcases()))
-			for i, testcase := range req.GetTestcases() {
-				newTestcases[i] = models.TestCase{
-					Order: testcase.GetOrder(),
-					Input: testcase.GetInput(),
-				}
-			}
-			testcases = newTestcases
-		}
-
-		solutionRunnerId := task.SolutionRunnerID
-		if req.GetSolutionRunnerId() != "" {
-			solutionRunnerId = req.SolutionRunnerId
-		}
-
-		if solutionRunnerId == nil && len(testcases) > 0 {
-			return nil, status.Error(codes.InvalidArgument, "solution runner id is required to generate test cases")
-		}
-
-		if len(solutionFiles) == 0 && len(testcases) > 0 {
-			return nil, status.Error(codes.InvalidArgument, "solution files are required to generate test cases")
-		}
-
-		if len(testcases) > 0 {
-			graderTestcases := make([]*graderPB.TestCaseRequest, len(testcases))
-			for i, testcase := range testcases {
-				graderTestcases[i] = &graderPB.TestCaseRequest{
-					Order: testcase.Order,
-					Input: testcase.Input,
-				}
-			}
-
-			res, err := g.graderClient.GenerateTestCases(ctx, &graderPB.GenerateTestCasesRequest{
-				Files:     graderSolutionFiles,
-				Testcases: graderTestcases,
-				RunnerId:  *solutionRunnerId,
-				Limit:     graderLimit,
-			})
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to generate test cases: %v", err)
-			}
-
-			updateTestCases := make([]models.TestCase, 0, len(res.GetResults()))
-			for _, gt := range res.GetResults() {
-				updateTestCases = append(updateTestCases, models.TestCase{
-					Order:  gt.GetOrder(),
-					Input:  gt.GetInput(),
-					Output: gt.GetOutput(),
-				})
-			}
-
-			updatedFields["testcases"] = updateTestCases
-		}
-
+	if err != nil {
+		return nil, err
 	}
 
-	_, err := g.db.Collection("tasks").UpdateByID(ctx, req.GetId(), bson.D{{Key: "$set", Value: updatedFields}})
+	updatedFields["test_cases"] = updateTestCases
+
+	_, err = g.db.Collection("tasks").UpdateByID(ctx, req.GetId(), bson.D{{Key: "$set", Value: updatedFields}})
 	if err != nil {
 		g.logger.Errorw("Failed to upsert task", "error", err, "taskId", req.GetId())
 		return nil, status.Errorf(codes.Internal, "failed to upsert task: %v", err)
@@ -386,6 +319,78 @@ func (g *grpcServer) UpdateTask(ctx context.Context, req *pb.UpdateTaskRequest) 
 
 	g.logger.Infow("Task updated", "taskId", req.GetId())
 	return nil, nil
+}
+
+type generateTestCasesPayload struct {
+	solutionRunnerID string
+	solutionFiles    []models.SolutionFile
+	testcases        []models.TestCase
+	limit            *models.Limit
+}
+
+func (g *grpcServer) generateTestCases(ctx context.Context, payload generateTestCasesPayload) ([]models.TestCase, error) {
+	if len(payload.testcases) == 0 {
+		return []models.TestCase{}, nil
+	}
+
+	if len(payload.solutionFiles) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "solution files are required to generate test cases")
+	}
+
+	if payload.solutionRunnerID == "" {
+		return nil, status.Error(codes.InvalidArgument, "solution runner is required to generate test cases")
+	}
+
+	var graderLimit *graderPB.Limit
+	if payload.limit != nil {
+		graderLimit = &graderPB.Limit{
+			CpuTime:      payload.limit.CpuTime,
+			CpuExtraTime: payload.limit.CpuExtraTime,
+			WallTime:     payload.limit.WallTime,
+			Memory:       payload.limit.Memory,
+			Stack:        payload.limit.Stack,
+			MaxOpenFiles: payload.limit.MaxOpenFiles,
+			MaxFileSize:  payload.limit.MaxFileSize,
+			NetworkAllow: payload.limit.NetworkAllow,
+		}
+	}
+
+	graderTestcases := make([]*graderPB.TestCaseRequest, len(payload.testcases))
+	for i, testcase := range payload.testcases {
+		graderTestcases[i] = &graderPB.TestCaseRequest{
+			Order: testcase.Order,
+			Input: testcase.Input,
+		}
+	}
+
+	graderSolutionFiles := make([]*graderPB.File, 0, len(payload.solutionFiles))
+	for _, file := range payload.solutionFiles {
+		graderSolutionFiles = append(graderSolutionFiles, &graderPB.File{
+			Name:    file.Name,
+			Content: file.Content,
+		})
+	}
+
+	res, err := g.graderClient.GenerateTestCases(ctx, &graderPB.GenerateTestCasesRequest{
+		Files:     graderSolutionFiles,
+		Testcases: graderTestcases,
+		RunnerId:  payload.solutionRunnerID,
+		Limit:     graderLimit,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to generate test cases: %v", err)
+	}
+
+	updateTestCases := make([]models.TestCase, 0, len(res.GetResults()))
+	for _, gt := range res.GetResults() {
+		updateTestCases = append(updateTestCases, models.TestCase{
+			Order:  gt.GetOrder(),
+			Input:  gt.GetInput(),
+			Output: gt.GetOutput(),
+		})
+	}
+
+	return updateTestCases, nil
 }
 
 func (g *grpcServer) DeleteTask(ctx context.Context, req *pb.DeleteTaskRequest) (*emptypb.Empty, error) {

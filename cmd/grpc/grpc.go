@@ -321,6 +321,9 @@ func (g *grpcServer) UpdateTask(ctx context.Context, req *pb.UpdateTaskRequest) 
 
 				testcases := praseTestCasesPBToModel(group.GetTestCases())
 
+				ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+				defer cancel()
+
 				updateTestCases, err := g.generateTestCases(ctx, generateTestCasesPayload{
 					solutionRunnerID: req.GetSolutionRunnerId(),
 					solutionFiles:    solutionFiles,

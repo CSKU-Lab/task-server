@@ -736,8 +736,9 @@ func (x *GradeResultResponse) GetAvgMemory() int32 {
 
 type TestCaseRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Order         int32                  `protobuf:"varint,1,opt,name=order,proto3" json:"order,omitempty"`
-	Input         string                 `protobuf:"bytes,2,opt,name=input,proto3" json:"input,omitempty"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Order         int32                  `protobuf:"varint,2,opt,name=order,proto3" json:"order,omitempty"`
+	Input         string                 `protobuf:"bytes,3,opt,name=input,proto3" json:"input,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -770,6 +771,13 @@ func (x *TestCaseRequest) ProtoReflect() protoreflect.Message {
 // Deprecated: Use TestCaseRequest.ProtoReflect.Descriptor instead.
 func (*TestCaseRequest) Descriptor() ([]byte, []int) {
 	return file_grader_v1_messages_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *TestCaseRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
 }
 
 func (x *TestCaseRequest) GetOrder() int32 {
@@ -856,9 +864,10 @@ func (x *GenerateTestCasesRequest) GetLimit() *Limit {
 
 type TestCaseResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Order         int32                  `protobuf:"varint,1,opt,name=order,proto3" json:"order,omitempty"`
-	Input         string                 `protobuf:"bytes,2,opt,name=input,proto3" json:"input,omitempty"`
-	Output        string                 `protobuf:"bytes,3,opt,name=output,proto3" json:"output,omitempty"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Order         int32                  `protobuf:"varint,2,opt,name=order,proto3" json:"order,omitempty"`
+	Input         string                 `protobuf:"bytes,3,opt,name=input,proto3" json:"input,omitempty"`
+	Output        string                 `protobuf:"bytes,4,opt,name=output,proto3" json:"output,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -891,6 +900,13 @@ func (x *TestCaseResponse) ProtoReflect() protoreflect.Message {
 // Deprecated: Use TestCaseResponse.ProtoReflect.Descriptor instead.
 func (*TestCaseResponse) Descriptor() ([]byte, []int) {
 	return file_grader_v1_messages_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *TestCaseResponse) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
 }
 
 func (x *TestCaseResponse) GetOrder() int32 {
@@ -1010,19 +1026,21 @@ const file_grader_v1_messages_proto_rawDesc = "" +
 	"\x11test_case_results\x18\x03 \x03(\v2\x19.grader.v1.TestCaseResultR\x0ftestCaseResults\x12\"\n" +
 	"\ravg_wall_time\x18\x04 \x01(\x02R\vavgWallTime\x12\x1d\n" +
 	"\n" +
-	"avg_memory\x18\x05 \x01(\x05R\tavgMemory\"=\n" +
-	"\x0fTestCaseRequest\x12\x14\n" +
-	"\x05order\x18\x01 \x01(\x05R\x05order\x12\x14\n" +
-	"\x05input\x18\x02 \x01(\tR\x05input\"\xc0\x01\n" +
+	"avg_memory\x18\x05 \x01(\x05R\tavgMemory\"M\n" +
+	"\x0fTestCaseRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
+	"\x05order\x18\x02 \x01(\x05R\x05order\x12\x14\n" +
+	"\x05input\x18\x03 \x01(\tR\x05input\"\xc0\x01\n" +
 	"\x18GenerateTestCasesRequest\x12%\n" +
 	"\x05files\x18\x01 \x03(\v2\x0f.grader.v1.FileR\x05files\x12\x1b\n" +
 	"\trunner_id\x18\x02 \x01(\tR\brunnerId\x128\n" +
 	"\ttestcases\x18\x03 \x03(\v2\x1a.grader.v1.TestCaseRequestR\ttestcases\x12&\n" +
-	"\x05limit\x18\x04 \x01(\v2\x10.grader.v1.LimitR\x05limit\"V\n" +
-	"\x10TestCaseResponse\x12\x14\n" +
-	"\x05order\x18\x01 \x01(\x05R\x05order\x12\x14\n" +
-	"\x05input\x18\x02 \x01(\tR\x05input\x12\x16\n" +
-	"\x06output\x18\x03 \x01(\tR\x06output\"R\n" +
+	"\x05limit\x18\x04 \x01(\v2\x10.grader.v1.LimitR\x05limit\"f\n" +
+	"\x10TestCaseResponse\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
+	"\x05order\x18\x02 \x01(\x05R\x05order\x12\x14\n" +
+	"\x05input\x18\x03 \x01(\tR\x05input\x12\x16\n" +
+	"\x06output\x18\x04 \x01(\tR\x06output\"R\n" +
 	"\x19GenerateTestCasesResponse\x125\n" +
 	"\aresults\x18\x01 \x03(\v2\x1b.grader.v1.TestCaseResponseR\aresults*\xa7\x02\n" +
 	"\x0fExecutionStatus\x12\x16\n" +

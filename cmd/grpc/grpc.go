@@ -229,16 +229,16 @@ func (g *grpcServer) GetTask(ctx context.Context, req *pb.GetTaskRequest) (*pb.T
 			TestCases: make([]*pb.TestCase, len(g.TestCases)),
 		}
 
-		for _, tc := range g.TestCases {
-			testcaseGroups[i].TestCases = append(testcaseGroups[i].TestCases, &pb.TestCase{
+		for j, tc := range g.TestCases {
+			testcaseGroups[i].TestCases[j] = &pb.TestCase{
+				Id:     tc.ID,
 				Order:  tc.Order,
 				Input:  tc.Input,
 				Output: tc.Output,
-			})
+			}
 		}
 	}
 
-	g.logger.Infow("Retrieved task", "taskId", taskID)
 	return &pb.TaskResponse{
 		Id:               task.ID,
 		AllowedRunnerIds: task.AllowedRunnerIDs,
@@ -331,6 +331,8 @@ func (g *grpcServer) UpdateTask(ctx context.Context, req *pb.UpdateTaskRequest) 
 					return err
 				}
 
+				g.logger.Infow("Generated testcases for group", "groupId", group.GetId(), "testcases", updateTestCases)
+
 				testcaseGroup.TestCases = updateTestCases
 
 				testcaseGroups = append(testcaseGroups, testcaseGroup)
@@ -347,7 +349,7 @@ func (g *grpcServer) UpdateTask(ctx context.Context, req *pb.UpdateTaskRequest) 
 		testcaseGroups = []models.TestCaseGroup{}
 	}
 
-	updatedFields["testcase_groups"] = testcaseGroups
+	updatedFields["test_case_groups"] = testcaseGroups
 
 	_, err := g.db.Collection("tasks").UpdateByID(ctx, req.GetId(), bson.D{{Key: "$set", Value: updatedFields}})
 	if err != nil {
@@ -363,9 +365,11 @@ func praseTestCasesPBToModel(testcasesPB []*pb.TestCase) []models.TestCase {
 	testcases := make([]models.TestCase, len(testcasesPB))
 	for i, testcasePB := range testcasesPB {
 		testcases[i] = models.TestCase{
-			Order:  testcasePB.GetOrder(),
-			Input:  testcasePB.GetInput(),
-			Output: testcasePB.GetOutput(),
+			ID:       testcasePB.GetId(),
+			Order:    testcasePB.GetOrder(),
+			Input:    testcasePB.GetInput(),
+			Output:   testcasePB.GetOutput(),
+			IsHidden: testcasePB.GetIsHidden(),
 		}
 	}
 	return testcases
@@ -408,6 +412,7 @@ func (g *grpcServer) generateTestCases(ctx context.Context, payload generateTest
 	graderTestcases := make([]*graderPB.TestCaseRequest, len(payload.testcases))
 	for i, testcase := range payload.testcases {
 		graderTestcases[i] = &graderPB.TestCaseRequest{
+			Id:    testcase.ID,
 			Order: testcase.Order,
 			Input: testcase.Input,
 		}
@@ -434,6 +439,7 @@ func (g *grpcServer) generateTestCases(ctx context.Context, payload generateTest
 	updateTestCases := make([]models.TestCase, 0, len(res.GetResults()))
 	for _, gt := range res.GetResults() {
 		updateTestCases = append(updateTestCases, models.TestCase{
+			ID:     gt.GetId(),
 			Order:  gt.GetOrder(),
 			Input:  gt.GetInput(),
 			Output: gt.GetOutput(),

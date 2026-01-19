@@ -150,12 +150,22 @@ func (g *grpcServer) GetTasks(ctx context.Context, req *pb.GetTasksRequest) (*pb
 			}
 		}
 
-		testcases := make([]*pb.TestCase, len(task.TestCases))
-		for i, testcase := range task.TestCases {
-			testcases[i] = &pb.TestCase{
-				Order:  testcase.Order,
-				Input:  testcase.Input,
-				Output: testcase.Output,
+		testcaseGroups := make([]*pb.TestCaseGroup, len(task.TestCaseGroups))
+		for i, g := range task.TestCaseGroups {
+			testcaseGroups[i] = &pb.TestCaseGroup{
+				Id:        g.ID,
+				Name:      g.Name,
+				Order:     g.Order,
+				Score:     g.Score,
+				TestCases: make([]*pb.TestCase, len(g.TestCases)),
+			}
+
+			for _, tc := range g.TestCases {
+				testcaseGroups[i].TestCases = append(testcaseGroups[i].TestCases, &pb.TestCase{
+					Order:  tc.Order,
+					Input:  tc.Input,
+					Output: tc.Output,
+				})
 			}
 		}
 
@@ -164,7 +174,7 @@ func (g *grpcServer) GetTasks(ctx context.Context, req *pb.GetTasksRequest) (*pb
 			AllowedRunnerIds: task.AllowedRunnerIDs,
 			CompareScriptId:  task.CompareID,
 			Limit:            taskLimit,
-			TestCases:        testcases,
+			TestCaseGroups:   testcaseGroups,
 			SolutionFiles:    solutionFiles,
 			SolutionRunnerId: task.SolutionRunnerID,
 		}
@@ -209,12 +219,22 @@ func (g *grpcServer) GetTask(ctx context.Context, req *pb.GetTaskRequest) (*pb.T
 		}
 	}
 
-	testcases := make([]*pb.TestCase, len(task.TestCases))
-	for i, testcase := range task.TestCases {
-		testcases[i] = &pb.TestCase{
-			Order:  testcase.Order,
-			Input:  testcase.Input,
-			Output: testcase.Output,
+	testcaseGroups := make([]*pb.TestCaseGroup, len(task.TestCaseGroups))
+	for i, g := range task.TestCaseGroups {
+		testcaseGroups[i] = &pb.TestCaseGroup{
+			Id:        g.ID,
+			Name:      g.Name,
+			Order:     g.Order,
+			Score:     g.Score,
+			TestCases: make([]*pb.TestCase, len(g.TestCases)),
+		}
+
+		for _, tc := range g.TestCases {
+			testcaseGroups[i].TestCases = append(testcaseGroups[i].TestCases, &pb.TestCase{
+				Order:  tc.Order,
+				Input:  tc.Input,
+				Output: tc.Output,
+			})
 		}
 	}
 
@@ -223,7 +243,7 @@ func (g *grpcServer) GetTask(ctx context.Context, req *pb.GetTaskRequest) (*pb.T
 		Id:               task.ID,
 		AllowedRunnerIds: task.AllowedRunnerIDs,
 		CompareScriptId:  task.CompareID,
-		TestCases:        testcases,
+		TestCaseGroups:   testcaseGroups,
 		Limit:            taskLimit,
 		SolutionFiles:    solutionFiles,
 		SolutionRunnerId: task.SolutionRunnerID,

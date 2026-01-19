@@ -265,7 +265,7 @@ type TaskResponse struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Id               string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	SolutionFiles    []*SolutionFile        `protobuf:"bytes,2,rep,name=solution_files,json=solutionFiles,proto3" json:"solution_files,omitempty"`
-	TestCases        []*TestCase            `protobuf:"bytes,3,rep,name=test_cases,json=testCases,proto3" json:"test_cases,omitempty"`
+	TestCaseGroups   []*TestCaseGroup       `protobuf:"bytes,3,rep,name=test_case_groups,json=testCaseGroups,proto3" json:"test_case_groups,omitempty"`
 	AllowedRunnerIds []string               `protobuf:"bytes,4,rep,name=allowed_runner_ids,json=allowedRunnerIds,proto3" json:"allowed_runner_ids,omitempty"`
 	CompareScriptId  *string                `protobuf:"bytes,5,opt,name=compare_script_id,json=compareScriptId,proto3,oneof" json:"compare_script_id,omitempty"`
 	Limit            *Limit                 `protobuf:"bytes,6,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
@@ -318,9 +318,9 @@ func (x *TaskResponse) GetSolutionFiles() []*SolutionFile {
 	return nil
 }
 
-func (x *TaskResponse) GetTestCases() []*TestCase {
+func (x *TaskResponse) GetTestCaseGroups() []*TestCaseGroup {
 	if x != nil {
-		return x.TestCases
+		return x.TestCaseGroups
 	}
 	return nil
 }
@@ -750,12 +750,11 @@ const file_task_v1_messages_proto_rawDesc = "" +
 	"\x05score\x18\x03 \x01(\x05R\x05score\x12\x14\n" +
 	"\x05order\x18\x04 \x01(\x05R\x05order\x120\n" +
 	"\n" +
-	"test_cases\x18\x05 \x03(\v2\x11.task.v1.TestCaseR\ttestCases\"\x82\x03\n" +
+	"test_cases\x18\x05 \x03(\v2\x11.task.v1.TestCaseR\ttestCases\"\x92\x03\n" +
 	"\fTaskResponse\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12<\n" +
-	"\x0esolution_files\x18\x02 \x03(\v2\x15.task.v1.SolutionFileR\rsolutionFiles\x120\n" +
-	"\n" +
-	"test_cases\x18\x03 \x03(\v2\x11.task.v1.TestCaseR\ttestCases\x12,\n" +
+	"\x0esolution_files\x18\x02 \x03(\v2\x15.task.v1.SolutionFileR\rsolutionFiles\x12@\n" +
+	"\x10test_case_groups\x18\x03 \x03(\v2\x16.task.v1.TestCaseGroupR\x0etestCaseGroups\x12,\n" +
 	"\x12allowed_runner_ids\x18\x04 \x03(\tR\x10allowedRunnerIds\x12/\n" +
 	"\x11compare_script_id\x18\x05 \x01(\tH\x00R\x0fcompareScriptId\x88\x01\x01\x12)\n" +
 	"\x05limit\x18\x06 \x01(\v2\x0e.task.v1.LimitH\x01R\x05limit\x88\x01\x01\x121\n" +
@@ -824,7 +823,7 @@ var file_task_v1_messages_proto_goTypes = []any{
 var file_task_v1_messages_proto_depIdxs = []int32{
 	2, // 0: task.v1.TestCaseGroup.test_cases:type_name -> task.v1.TestCase
 	7, // 1: task.v1.TaskResponse.solution_files:type_name -> task.v1.SolutionFile
-	2, // 2: task.v1.TaskResponse.test_cases:type_name -> task.v1.TestCase
+	3, // 2: task.v1.TaskResponse.test_case_groups:type_name -> task.v1.TestCaseGroup
 	6, // 3: task.v1.TaskResponse.limit:type_name -> task.v1.Limit
 	4, // 4: task.v1.GetTasksResponse.tasks:type_name -> task.v1.TaskResponse
 	7, // 5: task.v1.UpdateTaskRequest.solution_files:type_name -> task.v1.SolutionFile

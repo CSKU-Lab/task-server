@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -21,6 +22,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"go.uber.org/zap"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -69,8 +71,7 @@ func main() {
 
 	var wg sync.WaitGroup
 
-	wg.Add(1)
-	go func() {
+	wg.Go(func() {
 		defer wg.Done()
 		sigs := make(chan os.Signal, 1)
 		signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
@@ -84,7 +85,7 @@ func main() {
 
 		s.GracefulStop()
 		logger.Info("Server gracefully stopped")
-	}()
+	})
 
 	if err := s.Serve(lis); err != nil {
 		logger.Fatalw("Cannot start gRPC server", "error", err)
@@ -285,33 +286,50 @@ func (g *grpcServer) UpdateTask(ctx context.Context, req *pb.UpdateTaskRequest) 
 
 	updatedFields["solution_files"] = solutionFiles
 
-	var testcases []models.TestCase
-	if req.GetTestCases() != nil {
-		newTestcases := make([]models.TestCase, len(req.GetTestCases()))
-		for i, testcase := range req.GetTestCases() {
-			newTestcases[i] = models.TestCase{
-				Order: testcase.GetOrder(),
-				Input: testcase.GetInput(),
-			}
+	var testcaseGroups []models.TestCaseGroup
+	if req.GetTestCaseGroups() != nil {
+		var wg errgroup.Group
+		for _, group := range req.GetTestCaseGroups() {
+			wg.Go(func() error {
+				testcaseGroup := models.TestCaseGroup{
+					ID:        group.GetId(),
+					Name:      group.GetName(),
+					Score:     group.GetScore(),
+					Order:     group.GetOrder(),
+					TestCases: make([]models.TestCase, len(group.GetTestCases())),
+				}
+
+				testcases := praseTestCasesPBToModel(group.GetTestCases())
+
+				updateTestCases, err := g.generateTestCases(ctx, generateTestCasesPayload{
+					solutionRunnerID: req.GetSolutionRunnerId(),
+					solutionFiles:    solutionFiles,
+					testcases:        testcases,
+					limit:            limit,
+				})
+				if err != nil {
+					return err
+				}
+
+				testcaseGroup.TestCases = updateTestCases
+
+				testcaseGroups = append(testcaseGroups, testcaseGroup)
+				return nil
+			})
 		}
-		testcases = newTestcases
+
+		err := wg.Wait()
+		if err != nil {
+			g.logger.Errorw("Failed to generate testcases in some groups", "error", err)
+			return nil, errors.New("failed to generate testcases in some groups")
+		}
 	} else {
-		testcases = []models.TestCase{}
+		testcaseGroups = []models.TestCaseGroup{}
 	}
 
-	updateTestCases, err := g.generateTestCases(ctx, generateTestCasesPayload{
-		solutionRunnerID: req.GetSolutionRunnerId(),
-		solutionFiles:    solutionFiles,
-		testcases:        testcases,
-		limit:            limit,
-	})
-	if err != nil {
-		return nil, err
-	}
+	updatedFields["testcase_groups"] = testcaseGroups
 
-	updatedFields["test_cases"] = updateTestCases
-
-	_, err = g.db.Collection("tasks").UpdateByID(ctx, req.GetId(), bson.D{{Key: "$set", Value: updatedFields}})
+	_, err := g.db.Collection("tasks").UpdateByID(ctx, req.GetId(), bson.D{{Key: "$set", Value: updatedFields}})
 	if err != nil {
 		g.logger.Errorw("Failed to upsert task", "error", err, "taskId", req.GetId())
 		return nil, status.Errorf(codes.Internal, "failed to upsert task: %v", err)
@@ -319,6 +337,18 @@ func (g *grpcServer) UpdateTask(ctx context.Context, req *pb.UpdateTaskRequest) 
 
 	g.logger.Infow("Task updated", "taskId", req.GetId())
 	return nil, nil
+}
+
+func praseTestCasesPBToModel(testcasesPB []*pb.TestCase) []models.TestCase {
+	testcases := make([]models.TestCase, len(testcasesPB))
+	for i, testcasePB := range testcasesPB {
+		testcases[i] = models.TestCase{
+			Order:  testcasePB.GetOrder(),
+			Input:  testcasePB.GetInput(),
+			Output: testcasePB.GetOutput(),
+		}
+	}
+	return testcases
 }
 
 type generateTestCasesPayload struct {

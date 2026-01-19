@@ -1,9 +1,19 @@
 package models
 
 type TestCase struct {
-	Order  int32  `bson:"order"`
-	Input  string `bson:"input"`
-	Output string `bson:"output"`
+	ID       string `bson:"_id"`
+	Order    int32  `bson:"order"`
+	Input    string `bson:"input"`
+	Output   string `bson:"output"`
+	IsHidden bool   `bson:"is_hidden"`
+}
+
+type TestCaseGroup struct {
+	ID        string     `bson:"_id"`
+	Name      string     `bson:"name"`
+	Score     int32      `bson:"score"`
+	Order     int32      `bson:"order"`
+	TestCases []TestCase `bson:"test_cases"`
 }
 
 type Limit struct {

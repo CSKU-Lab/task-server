@@ -468,6 +468,63 @@ func (g *grpcServer) DeleteTask(ctx context.Context, req *pb.DeleteTaskRequest) 
 	return &emptypb.Empty{}, nil
 }
 
+func (g *grpcServer) RemoveRunnerOnCascade(ctx context.Context, req *pb.RemoveRunnerOnCascadeRequest) (*emptypb.Empty, error) {
+	runnerID := req.GetRunnerId()
+	if runnerID == "" {
+		return nil, status.Error(codes.InvalidArgument, "runner id is required")
+	}
+
+	_, err := g.db.Collection("tasks").UpdateMany(ctx, bson.M{
+		"allowed_runner_ids": runnerID,
+	}, bson.M{
+		"$pull": bson.M{
+			"allowed_runner_ids": runnerID,
+		},
+	})
+	if err != nil {
+		g.logger.Errorw("Failed to remove allowed runner from tasks", "error", err, "runnerId", runnerID)
+		return nil, status.Errorf(codes.Internal, "failed to remove runner from tasks: %v", err)
+	}
+
+	_, err = g.db.Collection("tasks").UpdateMany(ctx, bson.M{
+		"solution_runner_id": runnerID,
+	}, bson.M{
+		"$set": bson.M{
+			"solution_runner_id": nil,
+		},
+	},
+	)
+	if err != nil {
+		g.logger.Errorw("Failed to remove solution runner from tasks", "error", err, "runnerId", runnerID)
+		return nil, status.Errorf(codes.Internal, "failed to remove runner from tasks: %v", err)
+	}
+
+	g.logger.Infow("Removed runner from tasks", "runnerId", runnerID)
+	return &emptypb.Empty{}, nil
+}
+
+func (g *grpcServer) RemoveCompareScriptOnCascade(ctx context.Context, req *pb.RemoveCompareScriptOnCascadeRequest) (*emptypb.Empty, error) {
+	scriptID := req.GetCompareScriptId()
+	if scriptID == "" {
+		return nil, status.Error(codes.InvalidArgument, "script id is required")
+	}
+
+	_, err := g.db.Collection("tasks").UpdateMany(ctx, bson.M{
+		"compare_id": scriptID,
+	}, bson.M{
+		"$set": bson.M{
+			"compare_id": nil,
+		},
+	})
+	if err != nil {
+		g.logger.Errorw("Failed to remove compare script from tasks", "error", err, "scriptId", scriptID)
+		return nil, status.Errorf(codes.Internal, "failed to remove compare script from tasks: %v", err)
+	}
+
+	g.logger.Infow("Removed compare script from tasks", "scriptId", scriptID)
+	return &emptypb.Empty{}, nil
+}
+
 func (g *grpcServer) getTask(ctx context.Context, id string) (*models.Task, error) {
 	var task models.Task
 	err := g.db.Collection("tasks").FindOne(ctx, bson.M{"_id": id}).Decode(&task)

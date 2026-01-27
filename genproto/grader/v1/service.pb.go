@@ -24,40 +24,31 @@ var File_grader_v1_service_proto protoreflect.FileDescriptor
 
 const file_grader_v1_service_proto_rawDesc = "" +
 	"\n" +
-	"\x17grader/v1/service.proto\x12\tgrader.v1\x1a\x18grader/v1/messages.proto2\x96\x03\n" +
+	"\x17grader/v1/service.proto\x12\tgrader.v1\x1a\x18grader/v1/messages.proto2\xf5\x01\n" +
 	"\rGraderService\x12>\n" +
-	"\x03Run\x12\x15.grader.v1.RunRequest\x1a\x1c.grader.v1.RunResultResponse\"\x000\x01\x12N\n" +
-	"\fGetRunResult\x12\x1e.grader.v1.GetRunResultRequest\x1a\x1c.grader.v1.RunResultResponse\"\x00\x12=\n" +
-	"\x05Grade\x12\x17.grader.v1.GradeRequest\x1a\x19.grader.v1.GradedResponse\"\x00\x12T\n" +
-	"\x0eGetGradeResult\x12 .grader.v1.GetGradeResultRequest\x1a\x1e.grader.v1.GradeResultResponse\"\x00\x12`\n" +
+	"\x03Run\x12\x15.grader.v1.RunRequest\x1a\x1c.grader.v1.RunResultResponse\"\x000\x01\x12B\n" +
+	"\x05Grade\x12\x17.grader.v1.GradeRequest\x1a\x1e.grader.v1.GradeResultResponse\"\x00\x12`\n" +
 	"\x11GenerateTestCases\x12#.grader.v1.GenerateTestCasesRequest\x1a$.grader.v1.GenerateTestCasesResponse\"\x00B\x94\x01\n" +
 	"\rcom.grader.v1B\fServiceProtoP\x01Z0github.com/CSKU-Lab/grader-server/grpc/grader/v1\xa2\x02\x03GXX\xaa\x02\tGrader.V1\xca\x02\tGrader\\V1\xe2\x02\x15Grader\\V1\\GPBMetadata\xea\x02\n" +
 	"Grader::V1b\x06proto3"
 
 var file_grader_v1_service_proto_goTypes = []any{
 	(*RunRequest)(nil),                // 0: grader.v1.RunRequest
-	(*GetRunResultRequest)(nil),       // 1: grader.v1.GetRunResultRequest
-	(*GradeRequest)(nil),              // 2: grader.v1.GradeRequest
-	(*GetGradeResultRequest)(nil),     // 3: grader.v1.GetGradeResultRequest
-	(*GenerateTestCasesRequest)(nil),  // 4: grader.v1.GenerateTestCasesRequest
-	(*RunResultResponse)(nil),         // 5: grader.v1.RunResultResponse
-	(*GradedResponse)(nil),            // 6: grader.v1.GradedResponse
-	(*GradeResultResponse)(nil),       // 7: grader.v1.GradeResultResponse
-	(*GenerateTestCasesResponse)(nil), // 8: grader.v1.GenerateTestCasesResponse
+	(*GradeRequest)(nil),              // 1: grader.v1.GradeRequest
+	(*GenerateTestCasesRequest)(nil),  // 2: grader.v1.GenerateTestCasesRequest
+	(*RunResultResponse)(nil),         // 3: grader.v1.RunResultResponse
+	(*GradeResultResponse)(nil),       // 4: grader.v1.GradeResultResponse
+	(*GenerateTestCasesResponse)(nil), // 5: grader.v1.GenerateTestCasesResponse
 }
 var file_grader_v1_service_proto_depIdxs = []int32{
 	0, // 0: grader.v1.GraderService.Run:input_type -> grader.v1.RunRequest
-	1, // 1: grader.v1.GraderService.GetRunResult:input_type -> grader.v1.GetRunResultRequest
-	2, // 2: grader.v1.GraderService.Grade:input_type -> grader.v1.GradeRequest
-	3, // 3: grader.v1.GraderService.GetGradeResult:input_type -> grader.v1.GetGradeResultRequest
-	4, // 4: grader.v1.GraderService.GenerateTestCases:input_type -> grader.v1.GenerateTestCasesRequest
-	5, // 5: grader.v1.GraderService.Run:output_type -> grader.v1.RunResultResponse
-	5, // 6: grader.v1.GraderService.GetRunResult:output_type -> grader.v1.RunResultResponse
-	6, // 7: grader.v1.GraderService.Grade:output_type -> grader.v1.GradedResponse
-	7, // 8: grader.v1.GraderService.GetGradeResult:output_type -> grader.v1.GradeResultResponse
-	8, // 9: grader.v1.GraderService.GenerateTestCases:output_type -> grader.v1.GenerateTestCasesResponse
-	5, // [5:10] is the sub-list for method output_type
-	0, // [0:5] is the sub-list for method input_type
+	1, // 1: grader.v1.GraderService.Grade:input_type -> grader.v1.GradeRequest
+	2, // 2: grader.v1.GraderService.GenerateTestCases:input_type -> grader.v1.GenerateTestCasesRequest
+	3, // 3: grader.v1.GraderService.Run:output_type -> grader.v1.RunResultResponse
+	4, // 4: grader.v1.GraderService.Grade:output_type -> grader.v1.GradeResultResponse
+	5, // 5: grader.v1.GraderService.GenerateTestCases:output_type -> grader.v1.GenerateTestCasesResponse
+	3, // [3:6] is the sub-list for method output_type
+	0, // [0:3] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
 	0, // [0:0] is the sub-list for extension extendee
 	0, // [0:0] is the sub-list for field type_name

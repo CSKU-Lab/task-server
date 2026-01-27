@@ -20,11 +20,13 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	TaskService_GetTasks_FullMethodName   = "/task.v1.TaskService/GetTasks"
-	TaskService_GetTask_FullMethodName    = "/task.v1.TaskService/GetTask"
-	TaskService_CreateTask_FullMethodName = "/task.v1.TaskService/CreateTask"
-	TaskService_UpdateTask_FullMethodName = "/task.v1.TaskService/UpdateTask"
-	TaskService_DeleteTask_FullMethodName = "/task.v1.TaskService/DeleteTask"
+	TaskService_GetTasks_FullMethodName                     = "/task.v1.TaskService/GetTasks"
+	TaskService_GetTask_FullMethodName                      = "/task.v1.TaskService/GetTask"
+	TaskService_CreateTask_FullMethodName                   = "/task.v1.TaskService/CreateTask"
+	TaskService_UpdateTask_FullMethodName                   = "/task.v1.TaskService/UpdateTask"
+	TaskService_DeleteTask_FullMethodName                   = "/task.v1.TaskService/DeleteTask"
+	TaskService_RemoveRunnerOnCascade_FullMethodName        = "/task.v1.TaskService/RemoveRunnerOnCascade"
+	TaskService_RemoveCompareScriptOnCascade_FullMethodName = "/task.v1.TaskService/RemoveCompareScriptOnCascade"
 )
 
 // TaskServiceClient is the client API for TaskService service.
@@ -36,6 +38,8 @@ type TaskServiceClient interface {
 	CreateTask(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*CreateTaskResponse, error)
 	UpdateTask(ctx context.Context, in *UpdateTaskRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	DeleteTask(ctx context.Context, in *DeleteTaskRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	RemoveRunnerOnCascade(ctx context.Context, in *RemoveRunnerOnCascadeRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	RemoveCompareScriptOnCascade(ctx context.Context, in *RemoveCompareScriptOnCascadeRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
 type taskServiceClient struct {
@@ -96,6 +100,26 @@ func (c *taskServiceClient) DeleteTask(ctx context.Context, in *DeleteTaskReques
 	return out, nil
 }
 
+func (c *taskServiceClient) RemoveRunnerOnCascade(ctx context.Context, in *RemoveRunnerOnCascadeRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, TaskService_RemoveRunnerOnCascade_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *taskServiceClient) RemoveCompareScriptOnCascade(ctx context.Context, in *RemoveCompareScriptOnCascadeRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, TaskService_RemoveCompareScriptOnCascade_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // TaskServiceServer is the server API for TaskService service.
 // All implementations must embed UnimplementedTaskServiceServer
 // for forward compatibility.
@@ -105,6 +129,8 @@ type TaskServiceServer interface {
 	CreateTask(context.Context, *emptypb.Empty) (*CreateTaskResponse, error)
 	UpdateTask(context.Context, *UpdateTaskRequest) (*emptypb.Empty, error)
 	DeleteTask(context.Context, *DeleteTaskRequest) (*emptypb.Empty, error)
+	RemoveRunnerOnCascade(context.Context, *RemoveRunnerOnCascadeRequest) (*emptypb.Empty, error)
+	RemoveCompareScriptOnCascade(context.Context, *RemoveCompareScriptOnCascadeRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedTaskServiceServer()
 }
 
@@ -129,6 +155,12 @@ func (UnimplementedTaskServiceServer) UpdateTask(context.Context, *UpdateTaskReq
 }
 func (UnimplementedTaskServiceServer) DeleteTask(context.Context, *DeleteTaskRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteTask not implemented")
+}
+func (UnimplementedTaskServiceServer) RemoveRunnerOnCascade(context.Context, *RemoveRunnerOnCascadeRequest) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RemoveRunnerOnCascade not implemented")
+}
+func (UnimplementedTaskServiceServer) RemoveCompareScriptOnCascade(context.Context, *RemoveCompareScriptOnCascadeRequest) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RemoveCompareScriptOnCascade not implemented")
 }
 func (UnimplementedTaskServiceServer) mustEmbedUnimplementedTaskServiceServer() {}
 func (UnimplementedTaskServiceServer) testEmbeddedByValue()                     {}
@@ -241,6 +273,42 @@ func _TaskService_DeleteTask_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TaskService_RemoveRunnerOnCascade_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RemoveRunnerOnCascadeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TaskServiceServer).RemoveRunnerOnCascade(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TaskService_RemoveRunnerOnCascade_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TaskServiceServer).RemoveRunnerOnCascade(ctx, req.(*RemoveRunnerOnCascadeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TaskService_RemoveCompareScriptOnCascade_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RemoveCompareScriptOnCascadeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TaskServiceServer).RemoveCompareScriptOnCascade(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TaskService_RemoveCompareScriptOnCascade_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TaskServiceServer).RemoveCompareScriptOnCascade(ctx, req.(*RemoveCompareScriptOnCascadeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // TaskService_ServiceDesc is the grpc.ServiceDesc for TaskService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -267,6 +335,14 @@ var TaskService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteTask",
 			Handler:    _TaskService_DeleteTask_Handler,
+		},
+		{
+			MethodName: "RemoveRunnerOnCascade",
+			Handler:    _TaskService_RemoveRunnerOnCascade_Handler,
+		},
+		{
+			MethodName: "RemoveCompareScriptOnCascade",
+			Handler:    _TaskService_RemoveCompareScriptOnCascade_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -510,10 +510,10 @@ func (g *grpcServer) RemoveCompareScriptOnCascade(ctx context.Context, req *pb.R
 	}
 
 	_, err := g.db.Collection("tasks").UpdateMany(ctx, bson.M{
-		"compare_id": scriptID,
+		"compare_script_id": scriptID,
 	}, bson.M{
 		"$set": bson.M{
-			"compare_id": nil,
+			"compare_script_id": nil,
 		},
 	})
 	if err != nil {

@@ -1,6 +1,6 @@
 module github.com/CSKU-Lab/task-service
 
-go 1.25.5
+go 1.25
 
 require (
 	github.com/google/uuid v1.6.0

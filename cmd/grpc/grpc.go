@@ -107,33 +107,32 @@ func main() {
 
 type grpcServer struct {
 	pb.UnimplementedTaskServiceServer
-	db                   *mongo.Database
-	logger               *zap.SugaredLogger
-	taskCacheAllInstance cache.CacheInstance[*pb.GetTasksResponse]
-	graderClient         graderPB.GraderServiceClient
-	cacheApp             cache.CacheApp
+	db           *mongo.Database
+	logger       *zap.SugaredLogger
+	taskCache    cache.CacheBuild
+	graderClient graderPB.GraderServiceClient
+	cacheApp     cache.CacheApp
 }
 
 func NewGRPCServer(db *mongo.Database, logger *zap.SugaredLogger, graderClient graderPB.GraderServiceClient, cacheApp cache.CacheApp) pb.TaskServiceServer {
-	taskCacheAllInstance := cache.NewCacheInstance[*pb.GetTasksResponse](
-		"taskCache:all",
-		time.Hour*4,
-		cacheApp.GetRepo(),
-	)
+	taskCache := cacheApp.Build("taskCache")
 
 	return &grpcServer{
-		db:                   db,
-		logger:               logger,
-		taskCacheAllInstance: taskCacheAllInstance,
-		graderClient:         graderClient,
-		cacheApp:             cacheApp,
+		db:           db,
+		logger:       logger,
+		taskCache:    taskCache,
+		graderClient: graderClient,
+		cacheApp:     cacheApp,
 	}
 }
 
 // this method is only use for postman maybe no need to use in production
 // because in main service we already pagination there and just receive task_id from there and query just only that ids is enough
 func (g *grpcServer) GetTasks(ctx context.Context, req *pb.GetTasksRequest) (*pb.GetTasksResponse, error) {
-	taskRes, err := g.taskCacheAllInstance.LazyCaching(ctx, func() (*pb.GetTasksResponse, error) {
+	cacheObj := g.taskCache.All(time.Hour * 4)
+	cacheInstance := cache.NewCacheInstance[*pb.GetTasksResponse](cacheObj)
+
+	taskRes, err := cacheInstance.LazyCaching(ctx, func() (*pb.GetTasksResponse, error) {
 		cursor, err := g.db.Collection("tasks").Find(ctx, bson.D{})
 		if err != nil {
 			g.logger.Errorw("Failed to find tasks", "error", err)
@@ -218,13 +217,10 @@ func (g *grpcServer) GetTask(ctx context.Context, req *pb.GetTaskRequest) (*pb.T
 		return nil, status.Error(codes.InvalidArgument, "task id is required")
 	}
 
-	taskCacheInstance := cache.NewCacheInstance[*pb.TaskResponse](
-		"taskCache:"+taskID,
-		time.Hour*4,
-		g.cacheApp.GetRepo(),
-	)
+	cacheObj := g.taskCache.One(time.Hour*4, req.GetId())
+	cacheInstance := cache.NewCacheInstance[*pb.TaskResponse](cacheObj)
 
-	taskRes, err := taskCacheInstance.LazyCaching(ctx, func() (*pb.TaskResponse, error) {
+	taskRes, err := cacheInstance.LazyCaching(ctx, func() (*pb.TaskResponse, error) {
 		task, err := g.getTask(ctx, taskID)
 		if err != nil {
 			return nil, err
@@ -298,6 +294,11 @@ func (g *grpcServer) CreateTask(ctx context.Context, req *emptypb.Empty) (*pb.Cr
 	_, err = g.db.Collection("tasks").InsertOne(ctx, bson.M{"_id": id.String()})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create task: %v", err)
+	}
+
+	err = g.taskCache.InvalidateAll(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	return &pb.CreateTaskResponse{
@@ -398,7 +399,13 @@ func (g *grpcServer) UpdateTask(ctx context.Context, req *pb.UpdateTaskRequest) 
 		return nil, status.Errorf(codes.Internal, "failed to upsert task: %v", err)
 	}
 
+	err = g.taskCache.InvalidateAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	g.logger.Infow("Task updated", "taskId", req.GetId())
+
 	return nil, nil
 }
 
@@ -502,6 +509,11 @@ func (g *grpcServer) DeleteTask(ctx context.Context, req *pb.DeleteTaskRequest) 
 		return nil, status.Errorf(codes.Internal, "failed to delete task: %v", err)
 	}
 
+	err = g.taskCache.InvalidateAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	g.logger.Infow("Task deleted", "taskId", taskID)
 	return &emptypb.Empty{}, nil
 }
@@ -537,6 +549,11 @@ func (g *grpcServer) RemoveRunnerOnCascade(ctx context.Context, req *pb.RemoveRu
 		return nil, status.Errorf(codes.Internal, "failed to remove runner from tasks: %v", err)
 	}
 
+	err = g.taskCache.InvalidateAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	g.logger.Infow("Removed runner from tasks", "runnerId", runnerID)
 	return &emptypb.Empty{}, nil
 }
@@ -557,6 +574,11 @@ func (g *grpcServer) RemoveCompareScriptOnCascade(ctx context.Context, req *pb.R
 	if err != nil {
 		g.logger.Errorw("Failed to remove compare script from tasks", "error", err, "scriptId", scriptID)
 		return nil, status.Errorf(codes.Internal, "failed to remove compare script from tasks: %v", err)
+	}
+
+	err = g.taskCache.InvalidateAll(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	g.logger.Infow("Removed compare script from tasks", "scriptId", scriptID)

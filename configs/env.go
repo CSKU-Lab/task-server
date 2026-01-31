@@ -28,6 +28,8 @@ func NewEnv() *env {
 		"PORT":              os.Getenv("PORT"),
 		"DATABASE_NAME":     os.Getenv("DATABASE_NAME"),
 		"GRADER_SERVER_URL": os.Getenv("GRADER_SERVER_URL"),
+		"REDIS_SERVER_URL":  os.Getenv("REDIS_SERVER_URL"),
+		"REDIS_PASSWORD":    os.Getenv("REDIS_PASSWORD"),
 	}
 }
 

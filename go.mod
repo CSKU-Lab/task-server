@@ -1,6 +1,6 @@
 module github.com/CSKU-Lab/task-service
 
-go 1.25
+go 1.25.6
 
 require (
 	github.com/google/uuid v1.6.0
@@ -10,7 +10,13 @@ require (
 	google.golang.org/protobuf v1.36.6
 )
 
-require go.uber.org/multierr v1.10.0 // indirect
+require (
+	github.com/CSKU-Lab/cache v0.2.5 // indirect
+	github.com/cespare/xxhash/v2 v2.3.0 // indirect
+	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
+	github.com/redis/go-redis/v9 v9.17.3 // indirect
+	go.uber.org/multierr v1.10.0 // indirect
+)
 
 require (
 	github.com/golang/snappy v1.0.0 // indirect

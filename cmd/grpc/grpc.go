@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/CSKU-Lab/cache"
 	"github.com/CSKU-Lab/task-service/configs"
 	graderPB "github.com/CSKU-Lab/task-service/genproto/grader/v1"
 	pb "github.com/CSKU-Lab/task-service/genproto/task/v1"
@@ -64,8 +65,17 @@ func main() {
 	graderClient, closeGraderClient := initGraderServerClient(logger, env.Get("GRADER_SERVER_URL"))
 	defer closeGraderClient()
 
+	redis, err := cache.NewRedis(&cache.RedisOptions{
+		Addr:     env.Get("REDIS_SERVER_URL"),
+		Password: env.Get("REDIS_PASSWORD"),
+	})
+	if err != nil {
+		logger.Fatalw("Cannot initialize cache repository", "error", err)
+	}
+	defer redis.Close()
+
 	s := grpc.NewServer()
-	pb.RegisterTaskServiceServer(s, NewGRPCServer(db, logger, graderClient))
+	pb.RegisterTaskServiceServer(s, NewGRPCServer(db, logger, graderClient, redis))
 	reflection.Register(s)
 	logger.Infow("gRPC TaskService registered")
 
@@ -97,35 +107,127 @@ func main() {
 
 type grpcServer struct {
 	pb.UnimplementedTaskServiceServer
-	db           *mongo.Database
-	logger       *zap.SugaredLogger
-	graderClient graderPB.GraderServiceClient
+	db                   *mongo.Database
+	logger               *zap.SugaredLogger
+	taskCacheAllInstance cache.CacheInstance[*pb.GetTasksResponse]
+	graderClient         graderPB.GraderServiceClient
+	cacheApp             cache.CacheApp
 }
 
-func NewGRPCServer(db *mongo.Database, logger *zap.SugaredLogger, graderClient graderPB.GraderServiceClient) pb.TaskServiceServer {
+func NewGRPCServer(db *mongo.Database, logger *zap.SugaredLogger, graderClient graderPB.GraderServiceClient, cacheApp cache.CacheApp) pb.TaskServiceServer {
+	taskCacheAllInstance := cache.NewCacheInstance[*pb.GetTasksResponse](
+		"taskCache:all",
+		time.Hour*4,
+		cacheApp.GetRepo(),
+	)
+
 	return &grpcServer{
-		db:           db,
-		logger:       logger,
-		graderClient: graderClient,
+		db:                   db,
+		logger:               logger,
+		taskCacheAllInstance: taskCacheAllInstance,
+		graderClient:         graderClient,
+		cacheApp:             cacheApp,
 	}
 }
 
 // this method is only use for postman maybe no need to use in production
 // because in main service we already pagination there and just receive task_id from there and query just only that ids is enough
 func (g *grpcServer) GetTasks(ctx context.Context, req *pb.GetTasksRequest) (*pb.GetTasksResponse, error) {
-	cursor, err := g.db.Collection("tasks").Find(ctx, bson.D{})
-	if err != nil {
-		g.logger.Errorw("Failed to find tasks", "error", err)
-		return nil, status.Errorf(codes.Internal, "failed to find tasks: %v", err)
-	}
-	defer cursor.Close(ctx)
+	taskRes, err := g.taskCacheAllInstance.LazyCaching(ctx, func() (*pb.GetTasksResponse, error) {
+		cursor, err := g.db.Collection("tasks").Find(ctx, bson.D{})
+		if err != nil {
+			g.logger.Errorw("Failed to find tasks", "error", err)
+			return nil, status.Errorf(codes.Internal, "failed to find tasks: %v", err)
+		}
+		defer cursor.Close(ctx)
 
-	var tasks []*pb.TaskResponse
-	for cursor.Next(ctx) {
-		var task models.Task
-		if err := cursor.Decode(&task); err != nil {
-			g.logger.Errorw("Failed to decode task", "error", err)
-			return nil, status.Errorf(codes.Internal, "failed to decode task: %v", err)
+		var tasks []*pb.TaskResponse
+		for cursor.Next(ctx) {
+			var task models.Task
+			if err := cursor.Decode(&task); err != nil {
+				g.logger.Errorw("Failed to decode task", "error", err)
+				return nil, status.Errorf(codes.Internal, "failed to decode task: %v", err)
+			}
+
+			taskLimit := &pb.Limit{}
+			if task.Limit != nil {
+				taskLimit = &pb.Limit{
+					CpuTime:      task.Limit.CpuTime,
+					CpuExtraTime: task.Limit.CpuExtraTime,
+					WallTime:     task.Limit.WallTime,
+					Memory:       task.Limit.Memory,
+					Stack:        task.Limit.Stack,
+					MaxOpenFiles: task.Limit.MaxOpenFiles,
+					MaxFileSize:  task.Limit.MaxFileSize,
+					NetworkAllow: task.Limit.NetworkAllow,
+				}
+			}
+
+			solutionFiles := make([]*pb.SolutionFile, len(task.SolutionFiles))
+			for i, file := range task.SolutionFiles {
+				solutionFiles[i] = &pb.SolutionFile{
+					Name:    file.Name,
+					Content: file.Content,
+				}
+			}
+
+			testcaseGroups := make([]*pb.TestCaseGroup, len(task.TestCaseGroups))
+			for i, g := range task.TestCaseGroups {
+				testcaseGroups[i] = &pb.TestCaseGroup{
+					Id:        g.ID,
+					Name:      g.Name,
+					Order:     g.Order,
+					Score:     g.Score,
+					TestCases: make([]*pb.TestCase, len(g.TestCases)),
+				}
+
+				for _, tc := range g.TestCases {
+					testcaseGroups[i].TestCases = append(testcaseGroups[i].TestCases, &pb.TestCase{
+						Order:  tc.Order,
+						Input:  tc.Input,
+						Output: tc.Output,
+					})
+				}
+			}
+
+			taskRes := &pb.TaskResponse{
+				Id:               task.ID,
+				AllowedRunnerIds: task.AllowedRunnerIDs,
+				CompareScriptId:  task.CompareID,
+				Limit:            taskLimit,
+				TestCaseGroups:   testcaseGroups,
+				SolutionFiles:    solutionFiles,
+				SolutionRunnerId: task.SolutionRunnerID,
+			}
+
+			tasks = append(tasks, taskRes)
+		}
+
+		g.logger.Infow("Retrieved tasks", "count", len(tasks))
+		return &pb.GetTasksResponse{Tasks: tasks}, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return taskRes, nil
+}
+
+func (g *grpcServer) GetTask(ctx context.Context, req *pb.GetTaskRequest) (*pb.TaskResponse, error) {
+	taskID := req.GetId()
+	if taskID == "" {
+		return nil, status.Error(codes.InvalidArgument, "task id is required")
+	}
+
+	taskCacheInstance := cache.NewCacheInstance[*pb.TaskResponse](
+		"taskCache:"+taskID,
+		time.Hour*4,
+		g.cacheApp.GetRepo(),
+	)
+
+	taskRes, err := taskCacheInstance.LazyCaching(ctx, func() (*pb.TaskResponse, error) {
+		task, err := g.getTask(ctx, taskID)
+		if err != nil {
+			return nil, err
 		}
 
 		taskLimit := &pb.Limit{}
@@ -160,94 +262,30 @@ func (g *grpcServer) GetTasks(ctx context.Context, req *pb.GetTasksRequest) (*pb
 				TestCases: make([]*pb.TestCase, len(g.TestCases)),
 			}
 
-			for _, tc := range g.TestCases {
-				testcaseGroups[i].TestCases = append(testcaseGroups[i].TestCases, &pb.TestCase{
+			for j, tc := range g.TestCases {
+				testcaseGroups[i].TestCases[j] = &pb.TestCase{
+					Id:     tc.ID,
 					Order:  tc.Order,
 					Input:  tc.Input,
 					Output: tc.Output,
-				})
+				}
 			}
 		}
 
-		taskRes := &pb.TaskResponse{
+		return &pb.TaskResponse{
 			Id:               task.ID,
 			AllowedRunnerIds: task.AllowedRunnerIDs,
 			CompareScriptId:  task.CompareID,
-			Limit:            taskLimit,
 			TestCaseGroups:   testcaseGroups,
+			Limit:            taskLimit,
 			SolutionFiles:    solutionFiles,
 			SolutionRunnerId: task.SolutionRunnerID,
-		}
-
-		tasks = append(tasks, taskRes)
-	}
-
-	g.logger.Infow("Retrieved tasks", "count", len(tasks))
-	return &pb.GetTasksResponse{Tasks: tasks}, nil
-}
-
-func (g *grpcServer) GetTask(ctx context.Context, req *pb.GetTaskRequest) (*pb.TaskResponse, error) {
-	taskID := req.GetId()
-	if taskID == "" {
-		return nil, status.Error(codes.InvalidArgument, "task id is required")
-	}
-
-	task, err := g.getTask(ctx, taskID)
+		}, nil
+	})
 	if err != nil {
 		return nil, err
 	}
-
-	taskLimit := &pb.Limit{}
-	if task.Limit != nil {
-		taskLimit = &pb.Limit{
-			CpuTime:      task.Limit.CpuTime,
-			CpuExtraTime: task.Limit.CpuExtraTime,
-			WallTime:     task.Limit.WallTime,
-			Memory:       task.Limit.Memory,
-			Stack:        task.Limit.Stack,
-			MaxOpenFiles: task.Limit.MaxOpenFiles,
-			MaxFileSize:  task.Limit.MaxFileSize,
-			NetworkAllow: task.Limit.NetworkAllow,
-		}
-	}
-
-	solutionFiles := make([]*pb.SolutionFile, len(task.SolutionFiles))
-	for i, file := range task.SolutionFiles {
-		solutionFiles[i] = &pb.SolutionFile{
-			Name:    file.Name,
-			Content: file.Content,
-		}
-	}
-
-	testcaseGroups := make([]*pb.TestCaseGroup, len(task.TestCaseGroups))
-	for i, g := range task.TestCaseGroups {
-		testcaseGroups[i] = &pb.TestCaseGroup{
-			Id:        g.ID,
-			Name:      g.Name,
-			Order:     g.Order,
-			Score:     g.Score,
-			TestCases: make([]*pb.TestCase, len(g.TestCases)),
-		}
-
-		for j, tc := range g.TestCases {
-			testcaseGroups[i].TestCases[j] = &pb.TestCase{
-				Id:     tc.ID,
-				Order:  tc.Order,
-				Input:  tc.Input,
-				Output: tc.Output,
-			}
-		}
-	}
-
-	return &pb.TaskResponse{
-		Id:               task.ID,
-		AllowedRunnerIds: task.AllowedRunnerIDs,
-		CompareScriptId:  task.CompareID,
-		TestCaseGroups:   testcaseGroups,
-		Limit:            taskLimit,
-		SolutionFiles:    solutionFiles,
-		SolutionRunnerId: task.SolutionRunnerID,
-	}, nil
+	return taskRes, nil
 }
 
 func (g *grpcServer) CreateTask(ctx context.Context, req *emptypb.Empty) (*pb.CreateTaskResponse, error) {

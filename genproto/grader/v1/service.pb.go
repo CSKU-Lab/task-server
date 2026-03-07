@@ -9,6 +9,7 @@ package v1
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	reflect "reflect"
 	unsafe "unsafe"
 )
@@ -24,11 +25,12 @@ var File_grader_v1_service_proto protoreflect.FileDescriptor
 
 const file_grader_v1_service_proto_rawDesc = "" +
 	"\n" +
-	"\x17grader/v1/service.proto\x12\tgrader.v1\x1a\x18grader/v1/messages.proto2\xf5\x01\n" +
+	"\x17grader/v1/service.proto\x12\tgrader.v1\x1a\x18grader/v1/messages.proto\x1a\x1bgoogle/protobuf/empty.proto2\xb9\x02\n" +
 	"\rGraderService\x12>\n" +
 	"\x03Run\x12\x15.grader.v1.RunRequest\x1a\x1c.grader.v1.RunResultResponse\"\x000\x01\x12B\n" +
 	"\x05Grade\x12\x17.grader.v1.GradeRequest\x1a\x1e.grader.v1.GradeResultResponse\"\x00\x12`\n" +
-	"\x11GenerateTestCases\x12#.grader.v1.GenerateTestCasesRequest\x1a$.grader.v1.GenerateTestCasesResponse\"\x00B\x94\x01\n" +
+	"\x11GenerateTestCases\x12#.grader.v1.GenerateTestCasesRequest\x1a$.grader.v1.GenerateTestCasesResponse\"\x00\x12B\n" +
+	"\tBroadcast\x12\x1b.grader.v1.BroadcastRequest\x1a\x16.google.protobuf.Empty\"\x00B\x94\x01\n" +
 	"\rcom.grader.v1B\fServiceProtoP\x01Z0github.com/CSKU-Lab/grader-server/grpc/grader/v1\xa2\x02\x03GXX\xaa\x02\tGrader.V1\xca\x02\tGrader\\V1\xe2\x02\x15Grader\\V1\\GPBMetadata\xea\x02\n" +
 	"Grader::V1b\x06proto3"
 
@@ -36,19 +38,23 @@ var file_grader_v1_service_proto_goTypes = []any{
 	(*RunRequest)(nil),                // 0: grader.v1.RunRequest
 	(*GradeRequest)(nil),              // 1: grader.v1.GradeRequest
 	(*GenerateTestCasesRequest)(nil),  // 2: grader.v1.GenerateTestCasesRequest
-	(*RunResultResponse)(nil),         // 3: grader.v1.RunResultResponse
-	(*GradeResultResponse)(nil),       // 4: grader.v1.GradeResultResponse
-	(*GenerateTestCasesResponse)(nil), // 5: grader.v1.GenerateTestCasesResponse
+	(*BroadcastRequest)(nil),          // 3: grader.v1.BroadcastRequest
+	(*RunResultResponse)(nil),         // 4: grader.v1.RunResultResponse
+	(*GradeResultResponse)(nil),       // 5: grader.v1.GradeResultResponse
+	(*GenerateTestCasesResponse)(nil), // 6: grader.v1.GenerateTestCasesResponse
+	(*emptypb.Empty)(nil),             // 7: google.protobuf.Empty
 }
 var file_grader_v1_service_proto_depIdxs = []int32{
 	0, // 0: grader.v1.GraderService.Run:input_type -> grader.v1.RunRequest
 	1, // 1: grader.v1.GraderService.Grade:input_type -> grader.v1.GradeRequest
 	2, // 2: grader.v1.GraderService.GenerateTestCases:input_type -> grader.v1.GenerateTestCasesRequest
-	3, // 3: grader.v1.GraderService.Run:output_type -> grader.v1.RunResultResponse
-	4, // 4: grader.v1.GraderService.Grade:output_type -> grader.v1.GradeResultResponse
-	5, // 5: grader.v1.GraderService.GenerateTestCases:output_type -> grader.v1.GenerateTestCasesResponse
-	3, // [3:6] is the sub-list for method output_type
-	0, // [0:3] is the sub-list for method input_type
+	3, // 3: grader.v1.GraderService.Broadcast:input_type -> grader.v1.BroadcastRequest
+	4, // 4: grader.v1.GraderService.Run:output_type -> grader.v1.RunResultResponse
+	5, // 5: grader.v1.GraderService.Grade:output_type -> grader.v1.GradeResultResponse
+	6, // 6: grader.v1.GraderService.GenerateTestCases:output_type -> grader.v1.GenerateTestCasesResponse
+	7, // 7: grader.v1.GraderService.Broadcast:output_type -> google.protobuf.Empty
+	4, // [4:8] is the sub-list for method output_type
+	0, // [0:4] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
 	0, // [0:0] is the sub-list for extension extendee
 	0, // [0:0] is the sub-list for field type_name

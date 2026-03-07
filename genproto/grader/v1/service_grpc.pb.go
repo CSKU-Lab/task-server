@@ -11,6 +11,7 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -22,6 +23,7 @@ const (
 	GraderService_Run_FullMethodName               = "/grader.v1.GraderService/Run"
 	GraderService_Grade_FullMethodName             = "/grader.v1.GraderService/Grade"
 	GraderService_GenerateTestCases_FullMethodName = "/grader.v1.GraderService/GenerateTestCases"
+	GraderService_Broadcast_FullMethodName         = "/grader.v1.GraderService/Broadcast"
 )
 
 // GraderServiceClient is the client API for GraderService service.
@@ -31,6 +33,7 @@ type GraderServiceClient interface {
 	Run(ctx context.Context, in *RunRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[RunResultResponse], error)
 	Grade(ctx context.Context, in *GradeRequest, opts ...grpc.CallOption) (*GradeResultResponse, error)
 	GenerateTestCases(ctx context.Context, in *GenerateTestCasesRequest, opts ...grpc.CallOption) (*GenerateTestCasesResponse, error)
+	Broadcast(ctx context.Context, in *BroadcastRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
 type graderServiceClient struct {
@@ -80,6 +83,16 @@ func (c *graderServiceClient) GenerateTestCases(ctx context.Context, in *Generat
 	return out, nil
 }
 
+func (c *graderServiceClient) Broadcast(ctx context.Context, in *BroadcastRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, GraderService_Broadcast_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // GraderServiceServer is the server API for GraderService service.
 // All implementations must embed UnimplementedGraderServiceServer
 // for forward compatibility.
@@ -87,6 +100,7 @@ type GraderServiceServer interface {
 	Run(*RunRequest, grpc.ServerStreamingServer[RunResultResponse]) error
 	Grade(context.Context, *GradeRequest) (*GradeResultResponse, error)
 	GenerateTestCases(context.Context, *GenerateTestCasesRequest) (*GenerateTestCasesResponse, error)
+	Broadcast(context.Context, *BroadcastRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedGraderServiceServer()
 }
 
@@ -105,6 +119,9 @@ func (UnimplementedGraderServiceServer) Grade(context.Context, *GradeRequest) (*
 }
 func (UnimplementedGraderServiceServer) GenerateTestCases(context.Context, *GenerateTestCasesRequest) (*GenerateTestCasesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GenerateTestCases not implemented")
+}
+func (UnimplementedGraderServiceServer) Broadcast(context.Context, *BroadcastRequest) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Broadcast not implemented")
 }
 func (UnimplementedGraderServiceServer) mustEmbedUnimplementedGraderServiceServer() {}
 func (UnimplementedGraderServiceServer) testEmbeddedByValue()                       {}
@@ -174,6 +191,24 @@ func _GraderService_GenerateTestCases_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _GraderService_Broadcast_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BroadcastRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GraderServiceServer).Broadcast(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GraderService_Broadcast_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GraderServiceServer).Broadcast(ctx, req.(*BroadcastRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // GraderService_ServiceDesc is the grpc.ServiceDesc for GraderService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -188,6 +223,10 @@ var GraderService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GenerateTestCases",
 			Handler:    _GraderService_GenerateTestCases_Handler,
+		},
+		{
+			MethodName: "Broadcast",
+			Handler:    _GraderService_Broadcast_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

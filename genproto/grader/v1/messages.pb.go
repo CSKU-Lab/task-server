@@ -94,6 +94,49 @@ func (ExecutionStatus) EnumDescriptor() ([]byte, []int) {
 	return file_grader_v1_messages_proto_rawDescGZIP(), []int{0}
 }
 
+type BroadcastAction int32
+
+const (
+	BroadcastAction_REFETCH_CONFIG BroadcastAction = 0
+)
+
+// Enum value maps for BroadcastAction.
+var (
+	BroadcastAction_name = map[int32]string{
+		0: "REFETCH_CONFIG",
+	}
+	BroadcastAction_value = map[string]int32{
+		"REFETCH_CONFIG": 0,
+	}
+)
+
+func (x BroadcastAction) Enum() *BroadcastAction {
+	p := new(BroadcastAction)
+	*p = x
+	return p
+}
+
+func (x BroadcastAction) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (BroadcastAction) Descriptor() protoreflect.EnumDescriptor {
+	return file_grader_v1_messages_proto_enumTypes[1].Descriptor()
+}
+
+func (BroadcastAction) Type() protoreflect.EnumType {
+	return &file_grader_v1_messages_proto_enumTypes[1]
+}
+
+func (x BroadcastAction) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use BroadcastAction.Descriptor instead.
+func (BroadcastAction) EnumDescriptor() ([]byte, []int) {
+	return file_grader_v1_messages_proto_rawDescGZIP(), []int{1}
+}
+
 type File struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
@@ -910,6 +953,50 @@ func (x *GenerateTestCasesResponse) GetResults() []*TestCaseResponse {
 	return nil
 }
 
+type BroadcastRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Action        BroadcastAction        `protobuf:"varint,1,opt,name=action,proto3,enum=grader.v1.BroadcastAction" json:"action,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BroadcastRequest) Reset() {
+	*x = BroadcastRequest{}
+	mi := &file_grader_v1_messages_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BroadcastRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BroadcastRequest) ProtoMessage() {}
+
+func (x *BroadcastRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_grader_v1_messages_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BroadcastRequest.ProtoReflect.Descriptor instead.
+func (*BroadcastRequest) Descriptor() ([]byte, []int) {
+	return file_grader_v1_messages_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *BroadcastRequest) GetAction() BroadcastAction {
+	if x != nil {
+		return x.Action
+	}
+	return BroadcastAction_REFETCH_CONFIG
+}
+
 var File_grader_v1_messages_proto protoreflect.FileDescriptor
 
 const file_grader_v1_messages_proto_rawDesc = "" +
@@ -977,7 +1064,9 @@ const file_grader_v1_messages_proto_rawDesc = "" +
 	"\x05input\x18\x03 \x01(\tR\x05input\x12\x16\n" +
 	"\x06output\x18\x04 \x01(\tR\x06output\"R\n" +
 	"\x19GenerateTestCasesResponse\x125\n" +
-	"\aresults\x18\x01 \x03(\v2\x1b.grader.v1.TestCaseResponseR\aresults*\xa7\x02\n" +
+	"\aresults\x18\x01 \x03(\v2\x1b.grader.v1.TestCaseResponseR\aresults\"F\n" +
+	"\x10BroadcastRequest\x122\n" +
+	"\x06action\x18\x01 \x01(\x0e2\x1a.grader.v1.BroadcastActionR\x06action*\xa7\x02\n" +
 	"\x0fExecutionStatus\x12\x16\n" +
 	"\x12STATUS_UNSPECIFIED\x10\x00\x12\x19\n" +
 	"\x15STATUS_COMPILE_FAILED\x10\x01\x12\x15\n" +
@@ -990,7 +1079,9 @@ const file_grader_v1_messages_proto_rawDesc = "" +
 	"\x13STATUS_GRADER_ERROR\x10\b\x12\x11\n" +
 	"\rSTATUS_QUEUED\x10\t\x12\x12\n" +
 	"\x0eSTATUS_RUNNING\x10\n" +
-	"B\x95\x01\n" +
+	"*%\n" +
+	"\x0fBroadcastAction\x12\x12\n" +
+	"\x0eREFETCH_CONFIG\x10\x00B\x95\x01\n" +
 	"\rcom.grader.v1B\rMessagesProtoP\x01Z0github.com/CSKU-Lab/grader-server/grpc/grader/v1\xa2\x02\x03GXX\xaa\x02\tGrader.V1\xca\x02\tGrader\\V1\xe2\x02\x15Grader\\V1\\GPBMetadata\xea\x02\n" +
 	"Grader::V1b\x06proto3"
 
@@ -1006,41 +1097,44 @@ func file_grader_v1_messages_proto_rawDescGZIP() []byte {
 	return file_grader_v1_messages_proto_rawDescData
 }
 
-var file_grader_v1_messages_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_grader_v1_messages_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
+var file_grader_v1_messages_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_grader_v1_messages_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_grader_v1_messages_proto_goTypes = []any{
 	(ExecutionStatus)(0),              // 0: grader.v1.ExecutionStatus
-	(*File)(nil),                      // 1: grader.v1.File
-	(*Limit)(nil),                     // 2: grader.v1.Limit
-	(*RunRequest)(nil),                // 3: grader.v1.RunRequest
-	(*RunResultResponse)(nil),         // 4: grader.v1.RunResultResponse
-	(*TestCaseResult)(nil),            // 5: grader.v1.TestCaseResult
-	(*GradeRequest)(nil),              // 6: grader.v1.GradeRequest
-	(*TestCaseGroup)(nil),             // 7: grader.v1.TestCaseGroup
-	(*GradeResultResponse)(nil),       // 8: grader.v1.GradeResultResponse
-	(*TestCaseRequest)(nil),           // 9: grader.v1.TestCaseRequest
-	(*GenerateTestCasesRequest)(nil),  // 10: grader.v1.GenerateTestCasesRequest
-	(*TestCaseResponse)(nil),          // 11: grader.v1.TestCaseResponse
-	(*GenerateTestCasesResponse)(nil), // 12: grader.v1.GenerateTestCasesResponse
+	(BroadcastAction)(0),              // 1: grader.v1.BroadcastAction
+	(*File)(nil),                      // 2: grader.v1.File
+	(*Limit)(nil),                     // 3: grader.v1.Limit
+	(*RunRequest)(nil),                // 4: grader.v1.RunRequest
+	(*RunResultResponse)(nil),         // 5: grader.v1.RunResultResponse
+	(*TestCaseResult)(nil),            // 6: grader.v1.TestCaseResult
+	(*GradeRequest)(nil),              // 7: grader.v1.GradeRequest
+	(*TestCaseGroup)(nil),             // 8: grader.v1.TestCaseGroup
+	(*GradeResultResponse)(nil),       // 9: grader.v1.GradeResultResponse
+	(*TestCaseRequest)(nil),           // 10: grader.v1.TestCaseRequest
+	(*GenerateTestCasesRequest)(nil),  // 11: grader.v1.GenerateTestCasesRequest
+	(*TestCaseResponse)(nil),          // 12: grader.v1.TestCaseResponse
+	(*GenerateTestCasesResponse)(nil), // 13: grader.v1.GenerateTestCasesResponse
+	(*BroadcastRequest)(nil),          // 14: grader.v1.BroadcastRequest
 }
 var file_grader_v1_messages_proto_depIdxs = []int32{
-	1,  // 0: grader.v1.RunRequest.files:type_name -> grader.v1.File
-	2,  // 1: grader.v1.RunRequest.limit:type_name -> grader.v1.Limit
+	2,  // 0: grader.v1.RunRequest.files:type_name -> grader.v1.File
+	3,  // 1: grader.v1.RunRequest.limit:type_name -> grader.v1.Limit
 	0,  // 2: grader.v1.RunResultResponse.status:type_name -> grader.v1.ExecutionStatus
 	0,  // 3: grader.v1.TestCaseResult.status:type_name -> grader.v1.ExecutionStatus
-	1,  // 4: grader.v1.GradeRequest.files:type_name -> grader.v1.File
-	5,  // 5: grader.v1.TestCaseGroup.test_cases:type_name -> grader.v1.TestCaseResult
+	2,  // 4: grader.v1.GradeRequest.files:type_name -> grader.v1.File
+	6,  // 5: grader.v1.TestCaseGroup.test_cases:type_name -> grader.v1.TestCaseResult
 	0,  // 6: grader.v1.GradeResultResponse.status:type_name -> grader.v1.ExecutionStatus
-	7,  // 7: grader.v1.GradeResultResponse.test_case_groups:type_name -> grader.v1.TestCaseGroup
-	1,  // 8: grader.v1.GenerateTestCasesRequest.files:type_name -> grader.v1.File
-	9,  // 9: grader.v1.GenerateTestCasesRequest.testcases:type_name -> grader.v1.TestCaseRequest
-	2,  // 10: grader.v1.GenerateTestCasesRequest.limit:type_name -> grader.v1.Limit
-	11, // 11: grader.v1.GenerateTestCasesResponse.results:type_name -> grader.v1.TestCaseResponse
-	12, // [12:12] is the sub-list for method output_type
-	12, // [12:12] is the sub-list for method input_type
-	12, // [12:12] is the sub-list for extension type_name
-	12, // [12:12] is the sub-list for extension extendee
-	0,  // [0:12] is the sub-list for field type_name
+	8,  // 7: grader.v1.GradeResultResponse.test_case_groups:type_name -> grader.v1.TestCaseGroup
+	2,  // 8: grader.v1.GenerateTestCasesRequest.files:type_name -> grader.v1.File
+	10, // 9: grader.v1.GenerateTestCasesRequest.testcases:type_name -> grader.v1.TestCaseRequest
+	3,  // 10: grader.v1.GenerateTestCasesRequest.limit:type_name -> grader.v1.Limit
+	12, // 11: grader.v1.GenerateTestCasesResponse.results:type_name -> grader.v1.TestCaseResponse
+	1,  // 12: grader.v1.BroadcastRequest.action:type_name -> grader.v1.BroadcastAction
+	13, // [13:13] is the sub-list for method output_type
+	13, // [13:13] is the sub-list for method input_type
+	13, // [13:13] is the sub-list for extension type_name
+	13, // [13:13] is the sub-list for extension extendee
+	0,  // [0:13] is the sub-list for field type_name
 }
 
 func init() { file_grader_v1_messages_proto_init() }
@@ -1053,8 +1147,8 @@ func file_grader_v1_messages_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_grader_v1_messages_proto_rawDesc), len(file_grader_v1_messages_proto_rawDesc)),
-			NumEnums:      1,
-			NumMessages:   12,
+			NumEnums:      2,
+			NumMessages:   13,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

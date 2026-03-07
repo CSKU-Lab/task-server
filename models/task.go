@@ -27,25 +27,35 @@ type Limit struct {
 	NetworkAllow bool    `bson:"network_allow"`
 }
 
-type SolutionFile struct {
+type File struct {
 	Name    string `bson:"name"`
 	Content string `bson:"content"`
 }
 
+type AllowedRunner struct {
+	RunnerID string `bson:"runner_id"`
+	Files    []File `bson:"files"`
+}
+
+type Solution struct {
+	RunnerID string `bson:"runner_id"`
+	Files    []File `bson:"files"`
+}
+
 type Task struct {
-	ID               string          `bson:"_id"`
-	SolutionFiles    []SolutionFile  `bson:"solution_files"`
-	SolutionRunnerID *string         `bson:"solution_runner_id"`
-	AllowedRunnerIDs []string        `bson:"allowed_runner_ids"`
-	CompareID        *string         `bson:"compare_id"`
-	TestCaseGroups   []TestCaseGroup `bson:"test_case_groups"`
-	Limit            *Limit          `bson:"limit"`
+	ID             string          `bson:"_id"`
+	AllowedRunners []AllowedRunner `bson:"allowed_runners"`
+	Solution       *Solution       `bson:"solution"`
+	CompareID      *string         `bson:"compare_id"`
+	TestCaseGroups []TestCaseGroup `bson:"test_case_groups"`
+	Limit          *Limit          `bson:"limit"`
+	ResourceFiles  []File          `bson:"resource_files"`
 }
 
 type UpdateTask struct {
-	AllowedRunnerIDs []string       `bson:"allowed_runner_ids"`
-	CompareID        *string        `bson:"compare_id"`
-	Limit            *Limit         `bson:"limit"`
-	SolutionRunnerID *string        `bson:"solution_runner_id"`
-	SolutionFiles    []SolutionFile `bson:"solution_files"`
+	AllowedRunners []AllowedRunner `bson:"allowed_runners"`
+	CompareID      *string         `bson:"compare_id"`
+	Limit          *Limit          `bson:"limit"`
+	Solution       *Solution       `bson:"solution"`
+	ResourceFiles  []File          `bson:"resource_files"`
 }

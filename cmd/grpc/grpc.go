@@ -148,58 +148,7 @@ func (g *grpcServer) GetTasks(ctx context.Context, req *pb.GetTasksRequest) (*pb
 				return nil, status.Errorf(codes.Internal, "failed to decode task: %v", err)
 			}
 
-			taskLimit := &pb.Limit{}
-			if task.Limit != nil {
-				taskLimit = &pb.Limit{
-					CpuTime:      task.Limit.CpuTime,
-					CpuExtraTime: task.Limit.CpuExtraTime,
-					WallTime:     task.Limit.WallTime,
-					Memory:       task.Limit.Memory,
-					Stack:        task.Limit.Stack,
-					MaxOpenFiles: task.Limit.MaxOpenFiles,
-					MaxFileSize:  task.Limit.MaxFileSize,
-					NetworkAllow: task.Limit.NetworkAllow,
-				}
-			}
-
-			solutionFiles := make([]*pb.SolutionFile, len(task.SolutionFiles))
-			for i, file := range task.SolutionFiles {
-				solutionFiles[i] = &pb.SolutionFile{
-					Name:    file.Name,
-					Content: file.Content,
-				}
-			}
-
-			testcaseGroups := make([]*pb.TestCaseGroup, len(task.TestCaseGroups))
-			for i, g := range task.TestCaseGroups {
-				testcaseGroups[i] = &pb.TestCaseGroup{
-					Id:        g.ID,
-					Name:      g.Name,
-					Order:     g.Order,
-					Score:     g.Score,
-					TestCases: make([]*pb.TestCase, len(g.TestCases)),
-				}
-
-				for _, tc := range g.TestCases {
-					testcaseGroups[i].TestCases = append(testcaseGroups[i].TestCases, &pb.TestCase{
-						Order:  tc.Order,
-						Input:  tc.Input,
-						Output: tc.Output,
-					})
-				}
-			}
-
-			taskRes := &pb.TaskResponse{
-				Id:               task.ID,
-				AllowedRunnerIds: task.AllowedRunnerIDs,
-				CompareScriptId:  task.CompareID,
-				Limit:            taskLimit,
-				TestCaseGroups:   testcaseGroups,
-				SolutionFiles:    solutionFiles,
-				SolutionRunnerId: task.SolutionRunnerID,
-			}
-
-			tasks = append(tasks, taskRes)
+			tasks = append(tasks, taskModelToPB(&task))
 		}
 
 		g.logger.Infow("Retrieved tasks", "count", len(tasks))
@@ -226,57 +175,7 @@ func (g *grpcServer) GetTask(ctx context.Context, req *pb.GetTaskRequest) (*pb.T
 			return nil, err
 		}
 
-		taskLimit := &pb.Limit{}
-		if task.Limit != nil {
-			taskLimit = &pb.Limit{
-				CpuTime:      task.Limit.CpuTime,
-				CpuExtraTime: task.Limit.CpuExtraTime,
-				WallTime:     task.Limit.WallTime,
-				Memory:       task.Limit.Memory,
-				Stack:        task.Limit.Stack,
-				MaxOpenFiles: task.Limit.MaxOpenFiles,
-				MaxFileSize:  task.Limit.MaxFileSize,
-				NetworkAllow: task.Limit.NetworkAllow,
-			}
-		}
-
-		solutionFiles := make([]*pb.SolutionFile, len(task.SolutionFiles))
-		for i, file := range task.SolutionFiles {
-			solutionFiles[i] = &pb.SolutionFile{
-				Name:    file.Name,
-				Content: file.Content,
-			}
-		}
-
-		testcaseGroups := make([]*pb.TestCaseGroup, len(task.TestCaseGroups))
-		for i, g := range task.TestCaseGroups {
-			testcaseGroups[i] = &pb.TestCaseGroup{
-				Id:        g.ID,
-				Name:      g.Name,
-				Order:     g.Order,
-				Score:     g.Score,
-				TestCases: make([]*pb.TestCase, len(g.TestCases)),
-			}
-
-			for j, tc := range g.TestCases {
-				testcaseGroups[i].TestCases[j] = &pb.TestCase{
-					Id:     tc.ID,
-					Order:  tc.Order,
-					Input:  tc.Input,
-					Output: tc.Output,
-				}
-			}
-		}
-
-		return &pb.TaskResponse{
-			Id:               task.ID,
-			AllowedRunnerIds: task.AllowedRunnerIDs,
-			CompareScriptId:  task.CompareID,
-			TestCaseGroups:   testcaseGroups,
-			Limit:            taskLimit,
-			SolutionFiles:    solutionFiles,
-			SolutionRunnerId: task.SolutionRunnerID,
-		}, nil
+		return taskModelToPB(task), nil
 	})
 	if err != nil {
 		return nil, err
@@ -307,10 +206,32 @@ func (g *grpcServer) CreateTask(ctx context.Context, req *emptypb.Empty) (*pb.Cr
 }
 
 func (g *grpcServer) UpdateTask(ctx context.Context, req *pb.UpdateTaskRequest) (*emptypb.Empty, error) {
+	// Map allowed runners from proto to model
+	allowedRunners := make([]models.AllowedRunner, len(req.GetAllowedRunners()))
+	for i, ar := range req.GetAllowedRunners() {
+		allowedRunners[i] = models.AllowedRunner{
+			RunnerID: ar.GetRunnerId(),
+			Files:    pbFilesToModel(ar.GetFiles()),
+		}
+	}
+
+	// Map solution from proto to model
+	var solution *models.Solution
+	if req.GetSolution() != nil {
+		solution = &models.Solution{
+			RunnerID: req.GetSolution().GetRunnerId(),
+			Files:    pbFilesToModel(req.GetSolution().GetFiles()),
+		}
+	}
+
+	// Map resource files from proto to model
+	resourceFiles := pbFilesToModel(req.GetResourceFiles())
+
 	updatedFields := mongodb.GetUpdatedFields(&models.UpdateTask{
-		AllowedRunnerIDs: req.AllowedRunnerIds,
-		CompareID:        req.CompareScriptId,
-		SolutionRunnerID: req.SolutionRunnerId,
+		AllowedRunners: allowedRunners,
+		CompareID:      req.CompareScriptId,
+		Solution:       solution,
+		ResourceFiles:  resourceFiles,
 	})
 
 	var limit *models.Limit
@@ -327,23 +248,6 @@ func (g *grpcServer) UpdateTask(ctx context.Context, req *pb.UpdateTaskRequest) 
 		}
 		updatedFields["limit"] = limit
 	}
-
-	var solutionFiles []models.SolutionFile
-	if req.GetSolutionFiles() != nil {
-		newSolutionFiles := make([]models.SolutionFile, len(req.GetSolutionFiles()))
-		for i, file := range req.GetSolutionFiles() {
-			newSolutionFiles[i] = models.SolutionFile{
-				Name:    file.GetName(),
-				Content: file.GetContent(),
-			}
-		}
-
-		solutionFiles = newSolutionFiles
-	} else {
-		solutionFiles = []models.SolutionFile{}
-	}
-
-	updatedFields["solution_files"] = solutionFiles
 
 	var testcaseGroups []models.TestCaseGroup
 	if req.GetTestCaseGroups() != nil {
@@ -364,10 +268,9 @@ func (g *grpcServer) UpdateTask(ctx context.Context, req *pb.UpdateTaskRequest) 
 				defer cancel()
 
 				updateTestCases, err := g.generateTestCases(ctx, generateTestCasesPayload{
-					solutionRunnerID: req.GetSolutionRunnerId(),
-					solutionFiles:    solutionFiles,
-					testcases:        testcases,
-					limit:            limit,
+					solution:  solution,
+					testcases: testcases,
+					limit:     limit,
 				})
 				if err != nil {
 					return err
@@ -424,10 +327,9 @@ func praseTestCasesPBToModel(testcasesPB []*pb.TestCase) []models.TestCase {
 }
 
 type generateTestCasesPayload struct {
-	solutionRunnerID string
-	solutionFiles    []models.SolutionFile
-	testcases        []models.TestCase
-	limit            *models.Limit
+	solution  *models.Solution
+	testcases []models.TestCase
+	limit     *models.Limit
 }
 
 func (g *grpcServer) generateTestCases(ctx context.Context, payload generateTestCasesPayload) ([]models.TestCase, error) {
@@ -435,11 +337,11 @@ func (g *grpcServer) generateTestCases(ctx context.Context, payload generateTest
 		return []models.TestCase{}, nil
 	}
 
-	if len(payload.solutionFiles) == 0 {
+	if payload.solution == nil || len(payload.solution.Files) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "solution files are required to generate test cases")
 	}
 
-	if payload.solutionRunnerID == "" {
+	if payload.solution.RunnerID == "" {
 		return nil, status.Error(codes.InvalidArgument, "solution runner is required to generate test cases")
 	}
 
@@ -466,8 +368,8 @@ func (g *grpcServer) generateTestCases(ctx context.Context, payload generateTest
 		}
 	}
 
-	graderSolutionFiles := make([]*graderPB.File, 0, len(payload.solutionFiles))
-	for _, file := range payload.solutionFiles {
+	graderSolutionFiles := make([]*graderPB.File, 0, len(payload.solution.Files))
+	for _, file := range payload.solution.Files {
 		graderSolutionFiles = append(graderSolutionFiles, &graderPB.File{
 			Name:    file.Name,
 			Content: file.Content,
@@ -477,7 +379,7 @@ func (g *grpcServer) generateTestCases(ctx context.Context, payload generateTest
 	res, err := g.graderClient.GenerateTestCases(ctx, &graderPB.GenerateTestCasesRequest{
 		Files:     graderSolutionFiles,
 		Testcases: graderTestcases,
-		RunnerId:  payload.solutionRunnerID,
+		RunnerId:  payload.solution.RunnerID,
 		Limit:     graderLimit,
 	})
 	if err != nil {
@@ -525,10 +427,10 @@ func (g *grpcServer) RemoveRunnerOnCascade(ctx context.Context, req *pb.RemoveRu
 	}
 
 	_, err := g.db.Collection("tasks").UpdateMany(ctx, bson.M{
-		"allowed_runner_ids": runnerID,
+		"allowed_runners.runner_id": runnerID,
 	}, bson.M{
 		"$pull": bson.M{
-			"allowed_runner_ids": runnerID,
+			"allowed_runners": bson.M{"runner_id": runnerID},
 		},
 	})
 	if err != nil {
@@ -537,10 +439,10 @@ func (g *grpcServer) RemoveRunnerOnCascade(ctx context.Context, req *pb.RemoveRu
 	}
 
 	_, err = g.db.Collection("tasks").UpdateMany(ctx, bson.M{
-		"solution_runner_id": runnerID,
+		"solution.runner_id": runnerID,
 	}, bson.M{
 		"$set": bson.M{
-			"solution_runner_id": nil,
+			"solution": nil,
 		},
 	},
 	)
@@ -583,6 +485,94 @@ func (g *grpcServer) RemoveCompareScriptOnCascade(ctx context.Context, req *pb.R
 
 	g.logger.Infow("Removed compare script from tasks", "scriptId", scriptID)
 	return &emptypb.Empty{}, nil
+}
+
+// pbFilesToModel converts a slice of proto File messages to model File structs.
+func pbFilesToModel(files []*pb.File) []models.File {
+	result := make([]models.File, len(files))
+	for i, f := range files {
+		result[i] = models.File{
+			Name:    f.GetName(),
+			Content: f.GetContent(),
+		}
+	}
+	return result
+}
+
+// modelFilesToPB converts a slice of model File structs to proto File messages.
+func modelFilesToPB(files []models.File) []*pb.File {
+	result := make([]*pb.File, len(files))
+	for i, f := range files {
+		result[i] = &pb.File{
+			Name:    f.Name,
+			Content: f.Content,
+		}
+	}
+	return result
+}
+
+// taskModelToPB converts a Task model to a proto TaskResponse.
+func taskModelToPB(task *models.Task) *pb.TaskResponse {
+	var pbLimit *pb.Limit
+	if task.Limit != nil {
+		pbLimit = &pb.Limit{
+			CpuTime:      task.Limit.CpuTime,
+			CpuExtraTime: task.Limit.CpuExtraTime,
+			WallTime:     task.Limit.WallTime,
+			Memory:       task.Limit.Memory,
+			Stack:        task.Limit.Stack,
+			MaxOpenFiles: task.Limit.MaxOpenFiles,
+			MaxFileSize:  task.Limit.MaxFileSize,
+			NetworkAllow: task.Limit.NetworkAllow,
+		}
+	}
+
+	var pbSolution *pb.Solution
+	if task.Solution != nil {
+		pbSolution = &pb.Solution{
+			RunnerId: task.Solution.RunnerID,
+			Files:    modelFilesToPB(task.Solution.Files),
+		}
+	}
+
+	allowedRunners := make([]*pb.AllowedRunner, len(task.AllowedRunners))
+	for i, ar := range task.AllowedRunners {
+		allowedRunners[i] = &pb.AllowedRunner{
+			RunnerId: ar.RunnerID,
+			Files:    modelFilesToPB(ar.Files),
+		}
+	}
+
+	testCaseGroups := make([]*pb.TestCaseGroup, len(task.TestCaseGroups))
+	for i, g := range task.TestCaseGroups {
+		testCases := make([]*pb.TestCase, len(g.TestCases))
+		for j, tc := range g.TestCases {
+			testCases[j] = &pb.TestCase{
+				Id:       tc.ID,
+				Order:    tc.Order,
+				Input:    tc.Input,
+				Output:   tc.Output,
+				IsHidden: tc.IsHidden,
+			}
+		}
+		testCaseGroups[i] = &pb.TestCaseGroup{
+			Id:        g.ID,
+			Name:      g.Name,
+			Score:     g.Score,
+			Order:     g.Order,
+			TestCases: testCases,
+		}
+	}
+
+	return &pb.TaskResponse{
+		Id:              task.ID,
+		AllowedRunners:  allowedRunners,
+		CompareScriptId: task.CompareID,
+		Limit:           pbLimit,
+		Solution:        pbSolution,
+		TestCaseGroups:  testCaseGroups,
+		ResourceFiles:   modelFilesToPB(task.ResourceFiles),
+	}
 }
 
 func (g *grpcServer) getTask(ctx context.Context, id string) (*models.Task, error) {

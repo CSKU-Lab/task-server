@@ -268,9 +268,10 @@ func (g *grpcServer) UpdateTask(ctx context.Context, req *pb.UpdateTaskRequest) 
 				defer cancel()
 
 				updateTestCases, err := g.generateTestCases(childCtx, generateTestCasesPayload{
-					solution:  solution,
-					testcases: testcases,
-					limit:     limit,
+					solution:      solution,
+					resourceFiles: resourceFiles,
+					testcases:     testcases,
+					limit:         limit,
 				})
 				if err != nil {
 					return err
@@ -327,9 +328,10 @@ func praseTestCasesPBToModel(testcasesPB []*pb.TestCase) []models.TestCase {
 }
 
 type generateTestCasesPayload struct {
-	solution  *models.Solution
-	testcases []models.TestCase
-	limit     *models.Limit
+	solution      *models.Solution
+	resourceFiles []models.File
+	testcases     []models.TestCase
+	limit         *models.Limit
 }
 
 func (g *grpcServer) generateTestCases(ctx context.Context, payload generateTestCasesPayload) ([]models.TestCase, error) {
@@ -368,16 +370,22 @@ func (g *grpcServer) generateTestCases(ctx context.Context, payload generateTest
 		}
 	}
 
-	graderSolutionFiles := make([]*graderPB.File, 0, len(payload.solution.Files))
+	graderFiles := make([]*graderPB.File, 0, len(payload.solution.Files)+len(payload.resourceFiles))
 	for _, file := range payload.solution.Files {
-		graderSolutionFiles = append(graderSolutionFiles, &graderPB.File{
+		graderFiles = append(graderFiles, &graderPB.File{
+			Name:    file.Name,
+			Content: file.Content,
+		})
+	}
+	for _, file := range payload.resourceFiles {
+		graderFiles = append(graderFiles, &graderPB.File{
 			Name:    file.Name,
 			Content: file.Content,
 		})
 	}
 
 	res, err := g.graderClient.GenerateTestCases(ctx, &graderPB.GenerateTestCasesRequest{
-		Files:     graderSolutionFiles,
+		Files:     graderFiles,
 		Testcases: graderTestcases,
 		RunnerId:  payload.solution.RunnerID,
 		Limit:     graderLimit,

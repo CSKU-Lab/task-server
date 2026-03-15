@@ -151,7 +151,6 @@ func (g *grpcServer) GetTasks(ctx context.Context, req *pb.GetTasksRequest) (*pb
 			tasks = append(tasks, taskModelToPB(&task))
 		}
 
-		g.logger.Infow("Retrieved tasks", "count", len(tasks))
 		return &pb.GetTasksResponse{Tasks: tasks}, nil
 	})
 	if err != nil {
@@ -252,6 +251,7 @@ func (g *grpcServer) UpdateTask(ctx context.Context, req *pb.UpdateTaskRequest) 
 	var testcaseGroups []models.TestCaseGroup
 	if req.GetTestCaseGroups() != nil {
 		var wg errgroup.Group
+		var mu sync.Mutex
 		for _, group := range req.GetTestCaseGroups() {
 			wg.Go(func() error {
 				testcaseGroup := models.TestCaseGroup{
@@ -264,10 +264,10 @@ func (g *grpcServer) UpdateTask(ctx context.Context, req *pb.UpdateTaskRequest) 
 
 				testcases := praseTestCasesPBToModel(group.GetTestCases())
 
-				ctx, cancel := context.WithTimeout(ctx, 60*time.Second)
+				childCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
 				defer cancel()
 
-				updateTestCases, err := g.generateTestCases(ctx, generateTestCasesPayload{
+				updateTestCases, err := g.generateTestCases(childCtx, generateTestCasesPayload{
 					solution:  solution,
 					testcases: testcases,
 					limit:     limit,
@@ -276,11 +276,11 @@ func (g *grpcServer) UpdateTask(ctx context.Context, req *pb.UpdateTaskRequest) 
 					return err
 				}
 
-				g.logger.Infow("Generated testcases for group", "groupId", group.GetId(), "testcases", updateTestCases)
-
 				testcaseGroup.TestCases = updateTestCases
 
+				mu.Lock()
 				testcaseGroups = append(testcaseGroups, testcaseGroup)
+				mu.Unlock()
 				return nil
 			})
 		}

@@ -45,7 +45,12 @@ func main() {
 
 	env := configs.NewEnv()
 
-	client, err := mongo.Connect(options.Client().ApplyURI(env.Get("MONGO_URI")))
+	client, err := mongo.Connect(options.Client().
+		ApplyURI(env.Get("MONGO_URI")).
+		SetAuth(options.Credential{
+			Username: env.Get("MONGO_USERNAME"),
+			Password: env.Get("MONGO_PASSWORD"),
+		}))
 	if err != nil {
 		logger.Fatalw("Failed to connect to MongoDB", "error", err)
 	}

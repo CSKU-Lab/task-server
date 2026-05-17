@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	cskuotel "github.com/CSKU-Lab/otel"
 	"github.com/CSKU-Lab/cache"
 	"github.com/CSKU-Lab/task-service/configs"
 	graderPB "github.com/CSKU-Lab/task-service/genproto/grader/v1"
@@ -24,6 +25,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -42,6 +44,19 @@ func main() {
 			logger.Warnw("failed to flush logger", "error", err)
 		}
 	}()
+
+	otelShutdown, err := cskuotel.Init(context.Background())
+	if err != nil {
+		logger.Warnw("tracing unavailable", "error", err)
+	} else {
+		defer func() {
+			shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			if err := otelShutdown(shutdownCtx); err != nil {
+				logger.Warnw("tracer shutdown error", "error", err)
+			}
+		}()
+	}
 
 	env := configs.NewEnv()
 
@@ -80,7 +95,7 @@ func main() {
 	}
 	defer redis.Close()
 
-	s := grpc.NewServer()
+	s := grpc.NewServer(grpc.StatsHandler(otelgrpc.NewServerHandler()))
 	pb.RegisterTaskServiceServer(s, NewGRPCServer(db, logger, graderClient, redis))
 	reflection.Register(s)
 	logger.Infow("gRPC TaskService registered")
@@ -605,7 +620,10 @@ func (g *grpcServer) getTask(ctx context.Context, id string) (*models.Task, erro
 }
 
 func initGraderServerClient(logger *zap.SugaredLogger, clientAddr string) (client graderPB.GraderServiceClient, close func()) {
-	conn, err := grpc.NewClient(clientAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(clientAddr,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
+	)
 	if err != nil {
 		logger.Fatalf("Failed to connect to gRPC server: %v", err)
 	}

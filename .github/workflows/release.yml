@@ -5,41 +5,9 @@ on:
     branches:
       - main
 
-permissions:
-  contents: write
-  issues: write
-  pull-requests: write
-
 jobs:
   release:
-    name: Release
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      - name: Generate app token
-        id: token
-        uses: actions/create-github-app-token@v1
-        with:
-          app-id: ${{ secrets.SEMANTIC_RELEASE_APP_ID }}
-          private-key: ${{ secrets.SEMANTIC_RELEASE_PRIVATE_KEY }}
-
-      - name: Release
-        env:
-          GITHUB_TOKEN: ${{ steps.token.outputs.token }}
-        run: |
-          npx --package semantic-release@24 \
-              --package @semantic-release/changelog@6 \
-              --package @semantic-release/git@10 \
-              --package @semantic-release/github@11 \
-              --package @semantic-release/commit-analyzer@13 \
-              --package @semantic-release/release-notes-generator@14 \
-              semantic-release
+    uses: CSKU-Lab/.github/.github/workflows/release.yml@main
+    with:
+      docker_workflow: docker-publish.yml
+    secrets: inherit

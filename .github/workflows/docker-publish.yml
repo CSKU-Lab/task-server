@@ -7,80 +7,11 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-and-push:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    env:
-      IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/task-server
-      DOCKERFILE_PATH: Dockerfile.prod
-      CONTEXT_PATH: .
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_TOKEN }}
-
-      - name: Extract metadata (tags, labels)
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.IMAGE_NAME }}
-          tags: |
-            type=raw,value=latest
-            type=ref,event=tag
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: Dockerfile.prod
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          platforms: linux/amd64
-
-  update-gitops:
-    runs-on: ubuntu-latest
-    needs: build-and-push
-    if: startsWith(github.ref, 'refs/tags/')
-    permissions:
-      contents: read
-    steps:
-      - name: Generate labby token
-        id: labby
-        uses: actions/create-github-app-token@v1
-        with:
-          app-id: ${{ secrets.LABBY_APP_ID }}
-          private-key: ${{ secrets.LABBY_PRIVATE_KEY }}
-          owner: CSKU-Lab
-          repositories: gitops
-
-      - name: Checkout gitops repo
-        uses: actions/checkout@v4
-        with:
-          repository: CSKU-Lab/gitops
-          token: ${{ steps.labby.outputs.token }}
-
-      - name: Update task-server image tag
-        run: |
-          sed -i "s/imageTag: '.*'/imageTag: '${{ github.ref_name }}'/" apps/task-server/env.libsonnet
-
-      - name: Commit and push
-        run: |
-          git config user.name "labby[bot]"
-          git config user.email "labby[bot]@users.noreply.github.com"
-          git add apps/task-server/env.libsonnet
-          git commit -m "chore(task-server): update image tag to ${{ github.ref_name }}"
-          git push
+  publish:
+    uses: CSKU-Lab/.github/.github/workflows/docker-publish.yml@main
+    with:
+      image_name: task-server
+      dockerfile_path: Dockerfile.prod
+      gitops_paths: apps/task-server/env.libsonnet
+      service_name: task-server
+    secrets: inherit

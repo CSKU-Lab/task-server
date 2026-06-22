@@ -27,9 +27,15 @@ type Limit struct {
 	NetworkAllow bool    `bson:"network_allow"`
 }
 
-type File struct {
-	Name    string `bson:"name"`
+type Segment struct {
 	Content string `bson:"content"`
+	Type    string `bson:"type"`
+}
+
+type File struct {
+	Name     string    `bson:"name"`
+	Content  string    `bson:"content"`
+	Segments []Segment `bson:"segments,omitempty"`
 }
 
 type AllowedRunner struct {

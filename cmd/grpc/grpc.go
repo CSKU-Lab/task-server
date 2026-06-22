@@ -520,9 +520,17 @@ func (g *grpcServer) RemoveCompareScriptOnCascade(ctx context.Context, req *pb.R
 func pbFilesToModel(files []*pb.File) []models.File {
 	result := make([]models.File, len(files))
 	for i, f := range files {
+		segments := make([]models.Segment, len(f.GetSegments()))
+		for j, s := range f.GetSegments() {
+			segments[j] = models.Segment{
+				Content: s.GetContent(),
+				Type:    s.GetType(),
+			}
+		}
 		result[i] = models.File{
-			Name:    f.GetName(),
-			Content: f.GetContent(),
+			Name:     f.GetName(),
+			Content:  f.GetContent(),
+			Segments: segments,
 		}
 	}
 	return result
@@ -532,9 +540,17 @@ func pbFilesToModel(files []*pb.File) []models.File {
 func modelFilesToPB(files []models.File) []*pb.File {
 	result := make([]*pb.File, len(files))
 	for i, f := range files {
+		pbSegments := make([]*pb.Segment, len(f.Segments))
+		for j, s := range f.Segments {
+			pbSegments[j] = &pb.Segment{
+				Content: s.Content,
+				Type:    s.Type,
+			}
+		}
 		result[i] = &pb.File{
-			Name:    f.Name,
-			Content: f.Content,
+			Name:     f.Name,
+			Content:  f.Content,
+			Segments: pbSegments,
 		}
 	}
 	return result

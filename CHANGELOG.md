@@ -1,3 +1,10 @@
+# [0.5.0](https://github.com/CSKU-Lab/task-server/compare/v0.4.0...v0.5.0) (2026-06-23)
+
+
+### Features
+
+* **CS-213:** skip testcase regeneration when inputs and solution are unchanged ([15b2721](https://github.com/CSKU-Lab/task-server/commit/15b27210f6e7c43eca9b0d2cf1b7f3306468c0e9))
+
 # [0.4.0](https://github.com/CSKU-Lab/task-server/compare/v0.3.0...v0.4.0) (2026-06-22)
 
 

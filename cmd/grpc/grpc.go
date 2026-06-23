@@ -271,6 +271,19 @@ func (g *grpcServer) UpdateTask(ctx context.Context, req *pb.UpdateTaskRequest) 
 
 	var testcaseGroups []models.TestCaseGroup
 	if req.GetTestCaseGroups() != nil {
+		// Fetch existing task to determine what actually changed
+		existingTask, fetchErr := g.getTask(ctx, req.GetId())
+		existingTC := map[string]models.TestCase{}
+		solutionChanged := true
+		if fetchErr == nil {
+			solutionChanged = isSolutionChanged(existingTask.Solution, solution)
+			for _, grp := range existingTask.TestCaseGroups {
+				for _, tc := range grp.TestCases {
+					existingTC[tc.ID] = tc
+				}
+			}
+		}
+
 		var wg errgroup.Group
 		var mu sync.Mutex
 		for _, group := range req.GetTestCaseGroups() {
@@ -285,20 +298,49 @@ func (g *grpcServer) UpdateTask(ctx context.Context, req *pb.UpdateTaskRequest) 
 
 				testcases := praseTestCasesPBToModel(group.GetTestCases())
 
-				childCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
-				defer cancel()
-
-				updateTestCases, err := g.generateTestCases(childCtx, generateTestCasesPayload{
-					solution:      solution,
-					resourceFiles: resourceFiles,
-					testcases:     testcases,
-					limit:         limit,
-				})
-				if err != nil {
-					return err
+				// Split: testcases that need regeneration vs those with preserved output
+				toGenerate := make([]models.TestCase, 0, len(testcases))
+				preserved := make(map[string]string, len(testcases)) // id -> existing output
+				for _, tc := range testcases {
+					existing, exists := existingTC[tc.ID]
+					if !solutionChanged && exists && tc.Input == existing.Input && existing.Output != "" {
+						preserved[tc.ID] = existing.Output
+					} else {
+						toGenerate = append(toGenerate, tc)
+					}
 				}
 
-				testcaseGroup.TestCases = updateTestCases
+				generatedByID := map[string]models.TestCase{}
+				if len(toGenerate) > 0 {
+					childCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
+					defer cancel()
+
+					updateTestCases, err := g.generateTestCases(childCtx, generateTestCasesPayload{
+						solution:      solution,
+						resourceFiles: resourceFiles,
+						testcases:     toGenerate,
+						limit:         limit,
+					})
+					if err != nil {
+						return err
+					}
+					for _, tc := range updateTestCases {
+						generatedByID[tc.ID] = tc
+					}
+				}
+
+				// Reconstruct final testcase list preserving original order
+				for i, tc := range testcases {
+					if output, ok := preserved[tc.ID]; ok {
+						testcaseGroup.TestCases[i] = tc
+						testcaseGroup.TestCases[i].Output = output
+					} else if gen, ok := generatedByID[tc.ID]; ok {
+						testcaseGroup.TestCases[i] = gen
+						testcaseGroup.TestCases[i].IsHidden = tc.IsHidden
+					} else {
+						testcaseGroup.TestCases[i] = tc
+					}
+				}
 
 				mu.Lock()
 				testcaseGroups = append(testcaseGroups, testcaseGroup)
@@ -346,6 +388,29 @@ func praseTestCasesPBToModel(testcasesPB []*pb.TestCase) []models.TestCase {
 		}
 	}
 	return testcases
+}
+
+// isSolutionChanged reports whether the solution runner or file contents differ.
+func isSolutionChanged(existing, incoming *models.Solution) bool {
+	if (existing == nil) != (incoming == nil) {
+		return true
+	}
+	if existing == nil {
+		return false
+	}
+	if existing.RunnerID != incoming.RunnerID || len(existing.Files) != len(incoming.Files) {
+		return true
+	}
+	existingFiles := make(map[string]string, len(existing.Files))
+	for _, f := range existing.Files {
+		existingFiles[f.Name] = f.Content
+	}
+	for _, f := range incoming.Files {
+		if existingFiles[f.Name] != f.Content {
+			return true
+		}
+	}
+	return false
 }
 
 type generateTestCasesPayload struct {

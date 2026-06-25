@@ -402,12 +402,16 @@ func isSolutionChanged(existing, incoming *models.Solution) bool {
 	if existing.RunnerID != incoming.RunnerID || len(existing.Files) != len(incoming.Files) {
 		return true
 	}
+	// Compare the assembled content that the grader actually runs, not the raw
+	// flat Content. Edits confined to hidden/readonly/editable segments change
+	// the assembled program (and thus outputs) without necessarily changing
+	// Content, while edits to exclude-only segments correctly do not.
 	existingFiles := make(map[string]string, len(existing.Files))
 	for _, f := range existing.Files {
-		existingFiles[f.Name] = f.Content
+		existingFiles[f.Name] = assembleSolutionContent(f)
 	}
 	for _, f := range incoming.Files {
-		if existingFiles[f.Name] != f.Content {
+		if existingFiles[f.Name] != assembleSolutionContent(f) {
 			return true
 		}
 	}

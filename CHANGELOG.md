@@ -1,3 +1,10 @@
+## [0.5.2](https://github.com/CSKU-Lab/task-server/compare/v0.5.1...v0.5.2) (2026-06-25)
+
+
+### Bug Fixes
+
+* assemble the code in task-server ([1dd759a](https://github.com/CSKU-Lab/task-server/commit/1dd759a0601bcc2efb35866fff05db264a6b2f39))
+
 ## [0.5.1](https://github.com/CSKU-Lab/task-server/compare/v0.5.0...v0.5.1) (2026-06-25)
 
 

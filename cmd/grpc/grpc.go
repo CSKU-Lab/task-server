@@ -7,6 +7,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -420,6 +421,30 @@ type generateTestCasesPayload struct {
 	limit         *models.Limit
 }
 
+// assembleSolutionContent builds the flat file content that the grader compiles
+// and runs, from the file's segments. Mirrors main-server's submission assembly:
+// editable + readonly + hidden segments are concatenated in order; exclude
+// segments are dropped (example-only, never graded). For the solution, each
+// editable segment already holds the author's reference content, so it is used
+// as-is (unlike a student submission, which merges typed content by index).
+// Backward compat: a file with no segments uses its flat Content unchanged.
+func assembleSolutionContent(f models.File) string {
+	if len(f.Segments) == 0 {
+		return f.Content
+	}
+
+	var b strings.Builder
+	for _, seg := range f.Segments {
+		switch seg.Type {
+		case "editable", "readonly", "hidden":
+			b.WriteString(seg.Content)
+		case "exclude":
+			// example-only content, never compiled or graded
+		}
+	}
+	return b.String()
+}
+
 func (g *grpcServer) generateTestCases(ctx context.Context, payload generateTestCasesPayload) ([]models.TestCase, error) {
 	if len(payload.testcases) == 0 {
 		return []models.TestCase{}, nil
@@ -460,13 +485,13 @@ func (g *grpcServer) generateTestCases(ctx context.Context, payload generateTest
 	for _, file := range payload.solution.Files {
 		graderFiles = append(graderFiles, &graderPB.File{
 			Name:    file.Name,
-			Content: file.Content,
+			Content: assembleSolutionContent(file),
 		})
 	}
 	for _, file := range payload.resourceFiles {
 		graderFiles = append(graderFiles, &graderPB.File{
 			Name:    file.Name,
-			Content: file.Content,
+			Content: assembleSolutionContent(file),
 		})
 	}
 

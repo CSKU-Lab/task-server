@@ -1,3 +1,10 @@
+## [0.5.1](https://github.com/CSKU-Lab/task-server/compare/v0.5.0...v0.5.1) (2026-06-25)
+
+
+### Bug Fixes
+
+* assemble solution from segments when generating test cases ([0ef6f0f](https://github.com/CSKU-Lab/task-server/commit/0ef6f0fa85db4bb0bfbd5011e66230a6ff431b38))
+
 # [0.5.0](https://github.com/CSKU-Lab/task-server/compare/v0.4.0...v0.5.0) (2026-06-23)
 
 

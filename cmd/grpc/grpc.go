@@ -337,7 +337,8 @@ func (g *grpcServer) UpdateTask(ctx context.Context, req *pb.UpdateTaskRequest) 
 						testcaseGroup.TestCases[i].Output = output
 					} else if gen, ok := generatedByID[tc.ID]; ok {
 						testcaseGroup.TestCases[i] = gen
-						testcaseGroup.TestCases[i].IsHidden = tc.IsHidden
+						testcaseGroup.TestCases[i].HideInput = tc.HideInput
+						testcaseGroup.TestCases[i].HideOutput = tc.HideOutput
 					} else {
 						testcaseGroup.TestCases[i] = tc
 					}
@@ -381,11 +382,12 @@ func praseTestCasesPBToModel(testcasesPB []*pb.TestCase) []models.TestCase {
 	testcases := make([]models.TestCase, len(testcasesPB))
 	for i, testcasePB := range testcasesPB {
 		testcases[i] = models.TestCase{
-			ID:       testcasePB.GetId(),
-			Order:    testcasePB.GetOrder(),
-			Input:    testcasePB.GetInput(),
-			Output:   testcasePB.GetOutput(),
-			IsHidden: testcasePB.GetIsHidden(),
+			ID:         testcasePB.GetId(),
+			Order:      testcasePB.GetOrder(),
+			Input:      testcasePB.GetInput(),
+			Output:     testcasePB.GetOutput(),
+			HideInput:  testcasePB.GetHideInput(),
+			HideOutput: testcasePB.GetHideOutput(),
 		}
 	}
 	return testcases
@@ -687,11 +689,12 @@ func taskModelToPB(task *models.Task) *pb.TaskResponse {
 		testCases := make([]*pb.TestCase, len(g.TestCases))
 		for j, tc := range g.TestCases {
 			testCases[j] = &pb.TestCase{
-				Id:       tc.ID,
-				Order:    tc.Order,
-				Input:    tc.Input,
-				Output:   tc.Output,
-				IsHidden: tc.IsHidden,
+				Id:         tc.ID,
+				Order:      tc.Order,
+				Input:      tc.Input,
+				Output:     tc.Output,
+				HideInput:  tc.HideInput,
+				HideOutput: tc.HideOutput,
 			}
 		}
 		testCaseGroups[i] = &pb.TestCaseGroup{

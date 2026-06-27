@@ -1,11 +1,12 @@
 package models
 
 type TestCase struct {
-	ID       string `bson:"_id"`
-	Order    int32  `bson:"order"`
-	Input    string `bson:"input"`
-	Output   string `bson:"output"`
-	IsHidden bool   `bson:"is_hidden"`
+	ID         string `bson:"_id"`
+	Order      int32  `bson:"order"`
+	Input      string `bson:"input"`
+	Output     string `bson:"output"`
+	HideInput  bool   `bson:"hide_input"`
+	HideOutput bool   `bson:"hide_output"`
 }
 
 type TestCaseGroup struct {

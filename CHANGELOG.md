@@ -1,3 +1,10 @@
+# [0.6.0](https://github.com/CSKU-Lab/task-server/compare/v0.5.2...v0.6.0) (2026-06-27)
+
+
+### Features
+
+* **task:** split testcase is_hidden into hide_input/hide_output (CS-233) ([22da456](https://github.com/CSKU-Lab/task-server/commit/22da456c33667a0f074f6ba950fc8c944904c26c))
+
 ## [0.5.2](https://github.com/CSKU-Lab/task-server/compare/v0.5.1...v0.5.2) (2026-06-25)
 
 

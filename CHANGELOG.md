@@ -1,3 +1,10 @@
+## [0.6.1](https://github.com/CSKU-Lab/task-server/compare/v0.6.0...v0.6.1) (2026-06-29)
+
+
+### Bug Fixes
+
+* **task:** sort test case groups and cases by Order ([e49b72b](https://github.com/CSKU-Lab/task-server/commit/e49b72b56f0b6d8c140e8a55dd2329c6b298e4d2))
+
 # [0.6.0](https://github.com/CSKU-Lab/task-server/compare/v0.5.2...v0.6.0) (2026-06-27)
 
 

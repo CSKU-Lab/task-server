@@ -7,6 +7,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"sort"
 	"strings"
 	"sync"
 	"syscall"
@@ -286,8 +287,11 @@ func (g *grpcServer) UpdateTask(ctx context.Context, req *pb.UpdateTaskRequest) 
 		}
 
 		var wg errgroup.Group
-		var mu sync.Mutex
-		for _, group := range req.GetTestCaseGroups() {
+		// Pre-size and write by request index so the stored group order matches the
+		// order the client sent (and thus the Order field). Appending from goroutines
+		// would store groups in completion order, scrambling them.
+		testcaseGroups = make([]models.TestCaseGroup, len(req.GetTestCaseGroups()))
+		for groupIdx, group := range req.GetTestCaseGroups() {
 			wg.Go(func() error {
 				testcaseGroup := models.TestCaseGroup{
 					ID:        group.GetId(),
@@ -344,9 +348,7 @@ func (g *grpcServer) UpdateTask(ctx context.Context, req *pb.UpdateTaskRequest) 
 					}
 				}
 
-				mu.Lock()
-				testcaseGroups = append(testcaseGroups, testcaseGroup)
-				mu.Unlock()
+				testcaseGroups[groupIdx] = testcaseGroup
 				return nil
 			})
 		}
@@ -684,10 +686,26 @@ func taskModelToPB(task *models.Task) *pb.TaskResponse {
 		}
 	}
 
-	testCaseGroups := make([]*pb.TestCaseGroup, len(task.TestCaseGroups))
-	for i, g := range task.TestCaseGroups {
-		testCases := make([]*pb.TestCase, len(g.TestCases))
-		for j, tc := range g.TestCases {
+	// Emit groups and their test cases in their persisted Order. The stored array
+	// order is not guaranteed to match Order (UpdateTask used to write groups in
+	// goroutine-completion order), so sort here to give every consumer (submission
+	// view, grader) the deterministic, author-defined order.
+	sortedGroups := make([]models.TestCaseGroup, len(task.TestCaseGroups))
+	copy(sortedGroups, task.TestCaseGroups)
+	sort.SliceStable(sortedGroups, func(i, j int) bool {
+		return sortedGroups[i].Order < sortedGroups[j].Order
+	})
+
+	testCaseGroups := make([]*pb.TestCaseGroup, len(sortedGroups))
+	for i, g := range sortedGroups {
+		sortedTestCases := make([]models.TestCase, len(g.TestCases))
+		copy(sortedTestCases, g.TestCases)
+		sort.SliceStable(sortedTestCases, func(a, b int) bool {
+			return sortedTestCases[a].Order < sortedTestCases[b].Order
+		})
+
+		testCases := make([]*pb.TestCase, len(sortedTestCases))
+		for j, tc := range sortedTestCases {
 			testCases[j] = &pb.TestCase{
 				Id:         tc.ID,
 				Order:      tc.Order,
